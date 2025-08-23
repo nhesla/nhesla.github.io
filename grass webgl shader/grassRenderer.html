@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>WebGL2 Template</title>
+  </head>
+  <style>
+    canvas { border: 1px solid #ccc; }
+  </style>
+  <body>
+    <canvas width="600" height="400"></canvas>
+  </body>
+</html>
+<script src="resources/m4.js"></script>
+<script>
+
+"use strict"
+
+// Modify the Vertex Shader code below
+const vertexShaderSource = `#version 300 es
+
+uniform mat4 model;
+uniform mat4 view;
+uniform mat4 project;
+uniform float time;
+
+in vec3 p;
+in vec3 color;
+
+out vec3 vColor;
+
+void main()
+{
+    float sway = sin(p.y * 10.0 + time * 2.0) * 0.05 * p.y;
+    vec3 displaced = p + vec3(sway, 0.0, 0.0);
+    gl_Position = project * view * model * vec4(displaced, 1.0);
+    vColor = color;
+}`;
+
+// Modify the Fragment Shader code below
+const fragmentShaderSource = `#version 300 es
+
+precision mediump float;
+
+uniform int isGround;
+in vec3 vColor;
+out vec4 fragColor;
+
+void main()
+{
+    if (isGround == 1)
+        fragColor = vec4(0.4, 0.26, 0.13, 1.0); // dirt
+    else
+        fragColor = vec4(vColor, 1.0); // grass green
+}`;
+
+function generateGrassStrip3D(bladeCount, patchWidth = 5, patchDepth = 5) {
+  const vertices = [];
+  const segments = 5;
+  const baseWidth = 0.05;
+
+  const blades = [];
+  for (let i = 0; i < bladeCount; i++) {
+    blades.push({
+      baseX: (Math.random() - 0.5) * patchWidth,
+      baseZ: (Math.random() - 0.5) * patchDepth,
+      angle: Math.random() * Math.PI * 2,
+      height: 0.6 + Math.random() * 0.4,
+      bendAmount: 0.2 * (Math.random() - 0.5),
+      color: [
+        0.1 + Math.random() * 0.2, // R (dark to medium green)
+        0.6 + Math.random() * 0.3, // G (brighter green)
+        0.1 + Math.random() * 0.2  // B (very low)
+      ]
+    });
+  }
+
+  for (let i = 0; i < bladeCount; i++) {
+    const blade = blades[i];
+    const { baseX, baseZ, angle, height, bendAmount, color } = blade;
+
+    const dx = Math.cos(angle);
+    const dz = Math.sin(angle);
+    const bendDirection = bendAmount > 0 ? 1 : -1;
+
+    for (let j = 0; j <= segments; j++) {
+      const t = j / segments;
+      const y = t * height;
+      const width = baseWidth * (1.0 - t);
+
+      const curve = bendDirection * Math.sin(Math.PI * t) * Math.abs(bendAmount);
+
+      const centerX = baseX + dz * curve;
+      const centerZ = baseZ - dx * curve;
+
+      const offsetX = dx * (width / 2);
+      const offsetZ = dz * (width / 2);
+
+      // Left vertex
+      vertices.push(centerX - offsetX, y, centerZ - offsetZ, ...color);
+      // Right vertex
+      vertices.push(centerX + offsetX, y, centerZ + offsetZ, ...color);
+    }
+
+    if (i < bladeCount - 1) {
+      const last = vertices.slice(-6); // last vertex (right)
+      const next = blades[i + 1];
+      const nextDx = Math.cos(next.angle);
+      const nextDz = Math.sin(next.angle);
+      const nextColor = next.color;
+
+      const offsetX = nextDx * (baseWidth / 2);
+      const offsetZ = nextDz * (baseWidth / 2);
+
+      const left = [next.baseX - offsetX, 0, next.baseZ - offsetZ, ...nextColor];
+      const right = [next.baseX + offsetX, 0, next.baseZ + offsetZ, ...nextColor];
+
+      vertices.push(...last);
+      vertices.push(...left);
+      vertices.push(...left);
+      vertices.push(...right);
+    }
+  }
+
+  return new Float32Array(vertices);
+}
+
+
+
+const grassVertices = generateGrassStrip3D( 4000 ); // This number sets the amount of grass
+
+const groundVertices = new Float32Array([
+  -5, 0, -5,
+   5, 0, -5,
+  -5, 0,  5,
+   5, 0,  5,
+]);
+
+// Code that goes into every WebGL program
+//{
+const canvas = document.querySelector('canvas');
+const gl = canvas.getContext('webgl2');
+const program = gl.createProgram();
+
+const vertexBuffer = gl.createBuffer();
+gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
+gl.bufferData(gl.ARRAY_BUFFER, grassVertices, gl.STATIC_DRAW);
+
+const groundBuffer = gl.createBuffer();
+gl.bindBuffer(gl.ARRAY_BUFFER, groundBuffer);
+gl.bufferData(gl.ARRAY_BUFFER, groundVertices, gl.STATIC_DRAW);
+
+const vertexShader = gl.createShader(gl.VERTEX_SHADER);
+gl.shaderSource(vertexShader, vertexShaderSource);
+gl.compileShader(vertexShader);
+gl.attachShader(program, vertexShader);
+
+const fragmentShader = gl.createShader(gl.FRAGMENT_SHADER);
+gl.shaderSource(fragmentShader, fragmentShaderSource);
+gl.compileShader(fragmentShader);
+gl.attachShader(program, fragmentShader);
+
+gl.linkProgram(program);
+
+// Error logging if shaders are not compiled
+if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+    console.log(gl.getShaderInfoLog(vertexShader));
+    console.log(gl.getShaderInfoLog(fragmentShader));
+}
+
+gl.useProgram(program);
+//}
+
+const isGroundLoc = gl.getUniformLocation(program, 'isGround');
+const timeLoc = gl.getUniformLocation(program, 'time');
+
+// 
+const fov = Math.PI / 4; // 45 degrees
+const aspect = gl.canvas.clientWidth / gl.canvas.clientHeight;
+const near = 0.1;
+const far = 100;
+
+const project = m4.perspective(fov, aspect, near, far);
+
+// Camera settings
+let angle = 0;
+const radius = 5;
+const height = 2;
+
+
+
+const model = m4.identity();
+
+const modelLoc = gl.getUniformLocation(program, 'model')
+gl.uniformMatrix4fv(modelLoc, false, model)
+
+const projectLoc = gl.getUniformLocation(program, 'project')
+gl.uniformMatrix4fv(projectLoc, false, project)
+
+const pLoc = gl.getAttribLocation(program, 'p');
+const colorLoc = gl.getAttribLocation(program, 'color');
+
+//gl.vertexAttribPointer(pLoc, 3, gl.FLOAT, false, 0, 0);
+//gl.enableVertexAttribArray(pLoc);
+
+gl.vertexAttribPointer(pLoc, 3, gl.FLOAT, false, 24, 0);
+gl.enableVertexAttribArray(pLoc);
+
+gl.vertexAttribPointer(colorLoc, 3, gl.FLOAT, false, 24, 12);
+gl.enableVertexAttribArray(colorLoc);
+
+
+gl.clearColor(0.5, 0.8, 1.0, 1.0); // sky blue
+gl.enable(gl.DEPTH_TEST);
+
+// Draw loop
+function draw() {
+  const viewLoc = gl.getUniformLocation(program, 'view')
+  const time = performance.now() * 0.001;
+  gl.uniform1f(timeLoc, time);
+
+  angle += 0.01;
+  const eye = [Math.sin(angle) * radius, height, Math.cos(angle) * radius];
+  const target = [0, 0, 0];
+  const up = [0, 1, 0];
+  const view = m4.inverse(m4.lookAt(eye, target, up));
+
+  gl.uniformMatrix4fv(viewLoc, false, view);
+  gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+  // Draw ground
+  gl.uniform1i(isGroundLoc, 1);
+  gl.bindBuffer(gl.ARRAY_BUFFER, groundBuffer);
+  gl.vertexAttribPointer(pLoc, 3, gl.FLOAT, false, 0, 0);
+  gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+
+  // Draw grass
+  gl.uniform1i(isGroundLoc, 0);
+  gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
+  gl.vertexAttribPointer(pLoc, 3, gl.FLOAT, false, 24, 0);
+  gl.enableVertexAttribArray(pLoc);
+
+  gl.vertexAttribPointer(colorLoc, 3, gl.FLOAT, false, 24, 12);
+  gl.enableVertexAttribArray(colorLoc);
+
+  gl.drawArrays(gl.TRIANGLE_STRIP, 0, grassVertices.length / 6);
+
+  requestAnimationFrame(draw);
+}
+draw();
+
+
+</script>

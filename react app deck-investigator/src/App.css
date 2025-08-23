@@ -1,0 +1,49 @@
+:root {
+  --left-panel-bg: #5a5a5a59;
+  --middle-panel-bg: #94949459;
+  --right-panel-bg: #5a5a5a59;
+  --input-bg: #2e2e2e59;
+}
+
+html, body, #root {
+  height: 100%;
+  margin: .5%;
+  padding: 0;
+}
+
+.app-container {
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+}
+
+.left-panel {
+  width: 15%;
+  background-color: var(--left-panel-bg);
+  display: flex;
+  flex-direction: column;
+  padding: 10px;
+  box-sizing: border-box;
+  overflow-y: auto;
+}
+
+.middle-panel {
+  width: 75%;
+  background-color: var(--middle-panel-bg);
+  padding: 10px;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.right-panel {
+  width: 15%;
+  background-color: var(--right-panel-bg);
+  padding: 10px;
+  box-sizing: border-box;
+  overflow-y: auto;
+}
+
+.game-selector {
+  margin-top: 10%;
+  margin-bottom: 90%;
+}
