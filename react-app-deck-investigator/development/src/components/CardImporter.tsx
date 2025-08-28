@@ -40,9 +40,9 @@ class Deck_Manager extends Component<DeckListProps, DeckListState> {
   2x Blue-Eyes White Dragon
   1x Monster Reborn`,
     LOR: `Example Lorcana Deck:
-          4x Elsa - Snow Queen
-          3x Olaf - Friendly Snowman
-          2x Let It Go`,
+  4x Elsa - Snow Queen
+  3x Olaf - Friendly Snowman
+  2x Let It Go`,
   };
 
   constructor(props: DeckListProps) {
