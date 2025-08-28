@@ -30,6 +30,21 @@ interface DeckListState {
 }
 
 class Deck_Manager extends Component<DeckListProps, DeckListState> {
+  exampleDecks = {
+    MTG: `Example MTG Deck:
+          4x Lightning Bolt
+          4x Mountain
+          2x Shock`,
+    YGO: `Example Yu-Gi-Oh! Deck:
+          3x Dark Magician
+          2x Blue-Eyes White Dragon
+          1x Monster Reborn`,
+    LOR: `Example Lorcana Deck:
+          4x Elsa - Snow Queen
+          3x Olaf - Friendly Snowman
+          2x Let It Go`,
+  };
+
   constructor(props: DeckListProps) {
     super(props);
     this.state = {
@@ -37,6 +52,7 @@ class Deck_Manager extends Component<DeckListProps, DeckListState> {
       game: "MTG",
       deck_list: [],
     };
+
   }
 
   fetchCardData = async (listOfCards: string, game: string) => {
@@ -77,7 +93,7 @@ class Deck_Manager extends Component<DeckListProps, DeckListState> {
             return `!"${escapeSpecialChars(searchName)}"`; // Search by escaped first name only
           })
           .join(" OR ");
-  const res = await fetch(`https://api.scryfall.com/cards/search?q=${encodeURIComponent(query)}`);
+        const res = await fetch(`https://api.scryfall.com/cards/search?q=${encodeURIComponent(query)}`);
         const data = await res.json();
         fetchedCards = data.data;
       } else if (game === "YGO") {
@@ -193,7 +209,10 @@ class Deck_Manager extends Component<DeckListProps, DeckListState> {
   };
 
   handleTCGChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    this.setState({ game: e.target.value });
+    const selectedGame = e.target.value as keyof typeof this.exampleDecks;
+    this.setState({ 
+      game: e.target.value, 
+      list_of_cards: this.exampleDecks[selectedGame] });
   };
 
   handleUpdateDeck = () => {
