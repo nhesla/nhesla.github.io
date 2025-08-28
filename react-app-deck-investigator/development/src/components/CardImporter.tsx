@@ -32,13 +32,13 @@ interface DeckListState {
 class Deck_Manager extends Component<DeckListProps, DeckListState> {
   exampleDecks = {
     MTG: `Example MTG Deck:
-          4x Lightning Bolt
-          4x Mountain
-          2x Shock`,
+  4x Lightning Bolt
+  4x Mountain
+  2x Shock`,
     YGO: `Example Yu-Gi-Oh! Deck:
-          3x Dark Magician
-          2x Blue-Eyes White Dragon
-          1x Monster Reborn`,
+  3x Dark Magician
+  2x Blue-Eyes White Dragon
+  1x Monster Reborn`,
     LOR: `Example Lorcana Deck:
           4x Elsa - Snow Queen
           3x Olaf - Friendly Snowman
@@ -209,10 +209,10 @@ class Deck_Manager extends Component<DeckListProps, DeckListState> {
   };
 
   handleTCGChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const selectedGame = e.target.value as keyof typeof this.exampleDecks;
+    //const selectedGame = e.target.value as keyof typeof this.exampleDecks;
     this.setState({ 
-      game: e.target.value, 
-      list_of_cards: this.exampleDecks[selectedGame] });
+      game: e.target.value/*, 
+      list_of_cards: this.exampleDecks[selectedGame]*/ });
   };
 
   handleUpdateDeck = () => {
@@ -237,6 +237,7 @@ class Deck_Manager extends Component<DeckListProps, DeckListState> {
           onChange={this.handleListChange}
           rows={10}
           style={{ width: "100%", marginTop: "10px" }}
+          placeholder={this.exampleDecks[this.state.game as keyof typeof this.exampleDecks]}
         />
         <button onClick={this.handleUpdateDeck} style={{ marginTop: "10px", margin: "auto" }}>
           Update Decklist
