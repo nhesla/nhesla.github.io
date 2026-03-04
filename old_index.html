@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>My Web Projects</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      background: #f5f5f5;
+      padding: 2em;
+      color: #333;
+      max-width: 700px;
+      margin: auto;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 1em;
+    }
+    .project {
+      background: #fff;
+      padding: 1em;
+      margin-bottom: 1em;
+      border-radius: 8px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    .project a {
+      color: #007acc;
+      font-weight: bold;
+      text-decoration: none;
+    }
+    .project a:hover {
+      text-decoration: underline;
+    }
+    .video-container {
+      position: relative;
+      padding-bottom: 56.25%; /* 16:9 ratio */
+      height: 0;
+      overflow: hidden;
+      max-width: 100%;
+    }
+    .video-container iframe {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+    }
+  </style>
+</head>
+<body>
+  <h1>Nikolas Hesla</h1>
+
+  <div class="project">
+    <h2>Tower Defense Game</h2>
+    <h4>Java Applet, Java</h4>
+    <p><a href="TowerDefense/index.html" target="_blank">Play the game</a></p>
+    <p>My first passion project from highschool. 
+      A vector graphics tower defense game.</p>
+  </div>
+  
+  <div class="project">
+    <h2>Tank Game</h2>
+    <h4>Phaser.js, Javascript</h4>
+    <p><a href="phaser-tank-game/index.html" target="_blank">Play the game</a></p>
+    <p>Built with Phaser.js — a simple browser tank game. 
+      ASDW to move, mouse aim and click to shoot. 
+      Space bar to jump up onto higher ground.</p>
+  </div>
+
+  <div class="project">
+    <h2>Vulcan's Bad Suit</h2>
+    <h4>GameMaker, Javascript</h4>
+    <p><a href="Vulcans_bad_suit_v1.i/index.html" target="_blank">Play the game</a></p>
+    <p>A school group project I was the lead on. 
+      A puzzle platformer in which you launch yourself with bombs. 
+      My physics code is not great in this game.</p>
+  </div>
+
+  <div class="project">
+    <h2>Grass Shader</h2>
+    <h4>WebGL, GLSL, Javascript</h4>
+    <p><a href="grass-webgl-shader/grass_shader.html" target="_blank">View the shader</a></p>
+    <p>A modern approach to drawing grass written as a WebGL shader. 
+      Uses degenerate triangles to chain strips of grass into a 
+      single triangle strip which is sent to the renderer all at once.</p>
+  </div>
+
+  <div class="project">
+    <h2>TCG Deck Synergy Visualizer</h2>
+    <h4>React.js, APIs, Typescript</h4>
+    <p><a href="react-app-deck-investigator/index.html" target="_blank">View the app</a></p>
+    <p>A small React project showcasing component-based design. 
+      Allows users to import a deck list from one of three popular TCGs, 
+      Magic the Gathering, YuGiOh, and Disney Lorcana, and draw connections
+      between cards based on their synergies and relationships.
+      Designed to help users visualize how synergistic the cards in the deck are with one another.</p>
+  </div>
+
+  <div class="project">
+  <h2>Tasty Pastries (Capstone Project) Demo</h2>
+  <h4>Unreal Engine 4, C++</h4>
+  <p>A trailer of an UE4 project I headed. 
+    It's a first person baking game with a cartoony art style made in UE4.</p>
+  <div class="video-container">
+    <iframe
+      width="560"
+      height="315"
+      src="https://www.youtube.com/embed/uUYjZqz1piY"
+      title="YouTube video player"
+      frameborder="0"
+      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+      allowfullscreen>
+    </iframe>
+  </div>
+</div>
+
+</body>
+</html>

@@ -3,117 +3,160 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>My Web Projects</title>
-  <style>
-    body {
-      font-family: sans-serif;
-      background: #f5f5f5;
-      padding: 2em;
-      color: #333;
-      max-width: 700px;
-      margin: auto;
-    }
-    h1 {
-      text-align: center;
-      margin-bottom: 1em;
-    }
-    .project {
-      background: #fff;
-      padding: 1em;
-      margin-bottom: 1em;
-      border-radius: 8px;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-    }
-    .project a {
-      color: #007acc;
-      font-weight: bold;
-      text-decoration: none;
-    }
-    .project a:hover {
-      text-decoration: underline;
-    }
-    .video-container {
-      position: relative;
-      padding-bottom: 56.25%; /* 16:9 ratio */
-      height: 0;
-      overflow: hidden;
-      max-width: 100%;
-    }
-    .video-container iframe {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-    }
-  </style>
+  <title>Nikolas Hesla — Portfolio</title>
+  <link rel="stylesheet" href="assets/style.css" />
 </head>
 <body>
-  <h1>Nikolas Hesla</h1>
 
-  <div class="project">
-    <h2>Tower Defense Game</h2>
-    <h4>Java Applet, Java</h4>
-    <p><a href="TowerDefense/index.html" target="_blank">Play the game</a></p>
-    <p>My first passion project from highschool. 
-      A vector graphics tower defense game.</p>
-  </div>
-  
-  <div class="project">
-    <h2>Tank Game</h2>
-    <h4>Phaser.js, Javascript</h4>
-    <p><a href="phaser-tank-game/index.html" target="_blank">Play the game</a></p>
-    <p>Built with Phaser.js — a simple browser tank game. 
-      ASDW to move, mouse aim and click to shoot. 
-      Space bar to jump up onto higher ground.</p>
-  </div>
+  <nav class="site-nav">
+    <a href="index.html" class="nav-home">nhesla</a>
+    <div class="nav-project-links">
+      <a href="TowerDefense/index.html"                class="nav-pill">Tower Defense</a>
+      <a href="phaser-tank-game/index.html"             class="nav-pill">Tank Game</a>
+      <a href="Vulcans_bad_suit_v1.i/index.html"       class="nav-pill">Vulcan's Suit</a>
+      <a href="grass-webgl-shader/index.html"          class="nav-pill">Grass Shader</a>
+      <a href="react-app-deck-investigator/index.html" class="nav-pill">Deck Investigator</a>
+    </div>
+    <a href="challenges/index.html" class="nav-challenges-link">&gt;_ Challenges</a>
+  </nav>
 
-  <div class="project">
-    <h2>Vulcan's Bad Suit</h2>
-    <h4>GameMaker, Javascript</h4>
-    <p><a href="Vulcans_bad_suit_v1.i/index.html" target="_blank">Play the game</a></p>
-    <p>A school group project I was the lead on. 
-      A puzzle platformer in which you launch yourself with bombs. 
-      My physics code is not great in this game.</p>
+  <div class="home-hero">
+    <h1>Nikolas Hesla</h1>
+    <p class="subtitle">
+      AAS Game Development &nbsp;·&nbsp;
+      BS Computer Science <span>(Game Dev minor)</span>
+    </p>
   </div>
 
-  <div class="project">
-    <h2>Grass Shader</h2>
-    <h4>WebGL, GLSL, Javascript</h4>
-    <p><a href="grass-webgl-shader/grass_shader.html" target="_blank">View the shader</a></p>
-    <p>A modern approach to drawing grass written as a WebGL shader. 
-      Uses degenerate triangles to chain strips of grass into a 
-      single triangle strip which is sent to the renderer all at once.</p>
+  <div class="projects-section">
+    <div class="projects-section-heading">
+      <h2>Game Projects</h2>
+      <div class="line"></div>
+    </div>
+    <div class="projects-grid">
+
+      <a href="TowerDefense/index.html" class="proj-card">
+        <div class="proj-card-top">
+          <div class="proj-icon" style="background:rgba(255,107,107,0.1)">🗼</div>
+          <div>
+            <h3>Tower Defense</h3>
+            <div class="tag-row" style="margin-bottom:0.4rem">
+              <span class="tag tag-green">Java</span>
+              <span class="tag tag-neutral">Java Applet</span>
+              <span class="tag tag-neutral">High School</span>
+            </div>
+          </div>
+        </div>
+        <p>My first passion project — a vector-graphics tower defense game built from scratch in Java.</p>
+        <span class="proj-card-arrow">Play →</span>
+      </a>
+
+      <a href="phaser-tank-game/index.html" class="proj-card">
+        <div class="proj-card-top">
+          <div class="proj-icon" style="background:rgba(91,200,255,0.1)">🚀</div>
+          <div>
+            <h3>Tank Game</h3>
+            <div class="tag-row" style="margin-bottom:0.4rem">
+              <span class="tag tag-blue">JavaScript</span>
+              <span class="tag tag-blue">Phaser.js</span>
+              <span class="tag tag-neutral">School</span>
+            </div>
+          </div>
+        </div>
+        <p>Browser tank game. WASD to move, mouse to aim and shoot, spacebar to jump.</p>
+        <span class="proj-card-arrow">Play →</span>
+      </a>
+
+      <a href="Vulcans_bad_suit_v1.i/index.html" class="proj-card">
+        <div class="proj-card-top">
+          <div class="proj-icon" style="background:rgba(200,150,255,0.1)">💣</div>
+          <div>
+            <h3>Vulcan's Bad Suit</h3>
+            <div class="tag-row" style="margin-bottom:0.4rem">
+              <span class="tag tag-neutral">GameMaker</span>
+              <span class="tag tag-green">JavaScript</span>
+              <span class="tag tag-neutral">School · Lead</span>
+            </div>
+          </div>
+        </div>
+        <p>Group project I led — a puzzle platformer where you launch yourself using bombs.</p>
+        <span class="proj-card-arrow">Play →</span>
+      </a>
+
+      <a href="grass-webgl-shader/index.html" class="proj-card">
+        <div class="proj-card-top">
+          <div class="proj-icon" style="background:rgba(127,255,106,0.1)">🌿</div>
+          <div>
+            <h3>Grass Shader</h3>
+            <div class="tag-row" style="margin-bottom:0.4rem">
+              <span class="tag tag-green">GLSL</span>
+              <span class="tag tag-green">WebGL</span>
+              <span class="tag tag-green">JavaScript</span>
+            </div>
+          </div>
+        </div>
+        <p>Real-time grass rendered as a WebGL shader using a single triangle strip draw call.</p>
+        <span class="proj-card-arrow">View →</span>
+      </a>
+
+      <a href="react-app-deck-investigator/index.html" class="proj-card">
+        <div class="proj-card-top">
+          <div class="proj-icon" style="background:rgba(255,200,50,0.1)">🃏</div>
+          <div>
+            <h3>TCG Deck Synergy Visualizer</h3>
+            <div class="tag-row" style="margin-bottom:0.4rem">
+              <span class="tag tag-blue">React</span>
+              <span class="tag tag-blue">TypeScript</span>
+              <span class="tag tag-blue">APIs</span>
+            </div>
+          </div>
+        </div>
+        <p>Import a deck list from MTG, YuGiOh, or Disney Lorcana and visualize card synergies.</p>
+        <span class="proj-card-arrow">View →</span>
+      </a>
+
+      <div class="proj-card" style="cursor:default">
+        <div class="proj-card-top">
+          <div class="proj-icon" style="background:rgba(255,150,100,0.1)">🎂</div>
+          <div>
+            <h3>Tasty Pastries <span style="font-weight:400;color:var(--muted);font-size:0.78rem">(Capstone)</span></h3>
+            <div class="tag-row" style="margin-bottom:0.4rem">
+              <span class="tag tag-red">Unreal Engine 4</span>
+              <span class="tag tag-red">C++</span>
+              <span class="tag tag-neutral">Capstone · Lead</span>
+            </div>
+          </div>
+        </div>
+        <p>First-person baking game in UE4. I led this capstone project — trailer below.</p>
+        <div class="video-wrap">
+          <iframe src="https://www.youtube.com/embed/uUYjZqz1piY"
+            title="Tasty Pastries trailer"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowfullscreen></iframe>
+        </div>
+      </div>
+
+    </div>
   </div>
 
-  <div class="project">
-    <h2>TCG Deck Synergy Visualizer</h2>
-    <h4>React.js, APIs, Typescript</h4>
-    <p><a href="react-app-deck-investigator/index.html" target="_blank">View the app</a></p>
-    <p>A small React project showcasing component-based design. 
-      Allows users to import a deck list from one of three popular TCGs, 
-      Magic the Gathering, YuGiOh, and Disney Lorcana, and draw connections
-      between cards based on their synergies and relationships.
-      Designed to help users visualize how synergistic the cards in the deck are with one another.</p>
+  <div class="challenges-strip">
+    <div class="strip-heading">
+      <h2>Coding Challenges</h2>
+      <div class="strip-line"></div>
+      <a href="challenges/index.html" class="strip-link">View all →</a>
+    </div>
+    <div class="chal-grid">
+      <!-- Fill these in as you go -->
+      <a href="challenges/two-sum.html" class="chal-card">
+        <span class="diff-badge diff-easy">Easy</span>
+        <div>
+          <div class="chal-name">Two Sum</div>
+          <div class="chal-desc">Hash map for O(n) lookup instead of nested loops.</div>
+          <div class="chal-lang">Python · LeetCode #1</div>
+        </div>
+      </a>
+    </div>
   </div>
-
-  <div class="project">
-  <h2>Tasty Pastries (Capstone Project) Demo</h2>
-  <h4>Unreal Engine 4, C++</h4>
-  <p>A trailer of an UE4 project I headed. 
-    It's a first person baking game with a cartoony art style made in UE4.</p>
-  <div class="video-container">
-    <iframe
-      width="560"
-      height="315"
-      src="https://www.youtube.com/embed/uUYjZqz1piY"
-      title="YouTube video player"
-      frameborder="0"
-      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-      allowfullscreen>
-    </iframe>
-  </div>
-</div>
 
 </body>
 </html>
