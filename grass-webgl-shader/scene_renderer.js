@@ -32,11 +32,12 @@ uniform float patchiness;
 uniform float noiseScale;
 uniform float sharpness;
 uniform float densityBias;
+uniform float camX;
+uniform float camZ;
 
 in vec3 vPos;
 out vec4 fragColor;
 
-// ── Hash noise — identical formula to JS smoothNoise2 in grass_renderer.js ─
 float hashNoise(vec2 p) {
     float n = sin(dot(p, vec2(127.1, 311.7))) * 43758.5453;
     return fract(n) * 2.0 - 1.0;
@@ -70,17 +71,25 @@ float posRand(vec2 pos) {
 }
 
 void main() {
+    float fragDist = length(vec2(vPos.x - camX, vPos.z - camZ));
+
+    // Coarsen noise with distance — far fragments read as smooth blended color
+    float adaptiveScale = noiseScale / (1.0 + fragDist * 0.15);
+
     float rand = posRand(vec2(vPos.x, vPos.z));
 
-    // Dirt color
+    // Dirt — tinted slightly toward grass even in bare patches
     vec3 dirt = vec3(0.35 + rand * 0.08, 0.22 + rand * 0.06, 0.10 + rand * 0.04);
 
-    // Grass color — same HSL system as blades
+    // Grass color
     float bladeLit = clamp(brightness * 100.0 + (rand - 0.5) * variance, 5.0, 50.0);
     vec3  grass    = hslToRgb(hue, 100.0, bladeLit * 0.85);
 
-    // Coverage — same hash noise and patchiness math as blade placement in JS
-    float n01    = (smoothNoise(vec2(vPos.x, vPos.z) * noiseScale) + 1.0) * 0.5;
+    // Soften dirt toward grass so bare patches don't contrast so harshly
+    dirt = mix(dirt, grass, 0.25);
+
+    // Coverage using adaptive noise scale
+    float n01    = (smoothNoise(vec2(vPos.x, vPos.z) * adaptiveScale) + 1.0) * 0.5;
     float shaped = pow(n01, sharpness);
     float cover  = clamp(densityBias + shaped * sqrt(patchiness), 0.0, 1.0);
 
@@ -175,6 +184,8 @@ const gnd = {
     noiseScale:  gl.getUniformLocation(groundProgram, 'noiseScale'),
     sharpness:   gl.getUniformLocation(groundProgram, 'sharpness'),
     densityBias: gl.getUniformLocation(groundProgram, 'densityBias'),
+    camX: gl.getUniformLocation(groundProgram, 'camX'),
+    camZ: gl.getUniformLocation(groundProgram, 'camZ'),
 };
 
 const skyProgram = buildProgram(skyVertSrc, skyFragSrc);
@@ -326,6 +337,8 @@ function draw() {
     gl.uniform1f(gnd.noiseScale,  0.8);
     gl.uniform1f(gnd.sharpness,   sharpness);
     gl.uniform1f(gnd.densityBias, 1.0 - p);
+    gl.uniform1f(gnd.camX, camTargetX);
+    gl.uniform1f(gnd.camZ, camTargetZ);
     gl.bindBuffer(gl.ARRAY_BUFFER,         groundVBO);
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, groundIBO);
     gl.vertexAttribPointer(gnd.p, 3, gl.FLOAT, false, 12, 0);
@@ -335,7 +348,7 @@ function draw() {
 
     // Grass
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
-    window.GrassRenderer.draw(viewMatrix, projMatrix, camTargetX, camTargetZ, eyeX, eyeZ);
+    window.GrassRenderer.draw(viewMatrix, projMatrix, camTargetX, camTargetZ);
 
     requestAnimationFrame(draw);
 }

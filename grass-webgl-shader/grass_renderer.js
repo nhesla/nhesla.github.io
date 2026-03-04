@@ -24,8 +24,6 @@ function hilbertD2xy(order, d) {
 }
 
 // ── HASH NOISE ─────────────────────────────────────────────────────────────
-// Simple value noise using sin-based hash — matches the GLSL version in
-// scene_renderer.js exactly so ground impostor coverage aligns with blades.
 function hashNoise2(x, y) {
     const n = Math.sin(x * 127.1 + y * 311.7) * 43758.5453;
     return (n - Math.floor(n)) * 2.0 - 1.0;
@@ -36,15 +34,13 @@ function smoothNoise2(x, y) {
     const iy = Math.floor(y);
     const fx = x - ix;
     const fy = y - iy;
-    // Smoothstep
     const ux = fx * fx * (3.0 - 2.0 * fx);
     const uy = fy * fy * (3.0 - 2.0 * fy);
     const a  = hashNoise2(ix,     iy    );
     const b  = hashNoise2(ix + 1, iy    );
     const c  = hashNoise2(ix,     iy + 1);
     const d  = hashNoise2(ix + 1, iy + 1);
-    return a + (b - a) * ux + (c - a) * uy + (b - a + a - b + c - d) * ux * uy
-           + (d - c - b + a) * ux * uy;
+    return a + (b - a) * ux + (c - a) * uy + (d - c - b + a) * ux * uy;
 }
 
 // ── GRASS SHADERS ──────────────────────────────────────────────────────────
@@ -188,9 +184,7 @@ function generateGrassStrip3D(params, worldOffsetX = 0, worldOffsetZ = 0, segmen
 
         const wx  = worldOffsetX + (gx + 0.5) * cellW - patchWidth  * 0.5;
         const wz  = worldOffsetZ + (gz + 0.5) * cellD - patchDepth  * 0.5;
-
-        // Use matching hash noise — same as ground shader
-        const n01        = (smoothNoise2(wx * noiseScale, wz * noiseScale) + 1.0) * 0.5;
+        const n01 = (smoothNoise2(wx * noiseScale, wz * noiseScale) + 1.0) * 0.5;
         const shaped     = Math.pow(n01, sharpness);
         const acceptance = densityBias + shaped * p;
         if (Math.random() > acceptance) continue;
@@ -427,7 +421,7 @@ class ChunkManager {
         return true;
     }
 
-    draw(gl, loc, viewMatrix, projMatrix, params, camX, camZ, eyeX, eyeZ, time) {
+    draw(gl, loc, viewMatrix, projMatrix, params, camX, camZ, time) {
         const vp     = m4.multiply(projMatrix, viewMatrix);
         const planes = this._extractFrustumPlanes(vp);
 
@@ -448,26 +442,20 @@ class ChunkManager {
         const lodInner = CHUNK_SIZE * (this.rings - 0.5) * lodMult;
         const lodOuter = CHUNK_SIZE * (this.rings + 0.5) * lodMult;
         const lodMid   = (lodInner + lodOuter) * 0.5;
-        const lodMin   = 0.15;
 
         for (const chunk of this.chunks) {
             if (chunk.vertCount[0] === 0) continue;
             if (!this._chunkVisible(chunk, planes)) continue;
 
-            const dx   = chunk.worldX - eyeX;
-            const dz   = chunk.worldZ - eyeZ;
+            // Distance from camera target to chunk centre — XZ only
+            const dx   = chunk.worldX - camX;
+            const dz   = chunk.worldZ - camZ;
             const dist = Math.sqrt(dx * dx + dz * dz);
 
+            // Select LOD buffer by distance — draw it completely, no prefix
             const lodLevel = dist < lodInner ? 0
                            : dist < lodMid   ? 1
                            :                   2;
-
-            const lodFrac = dist < lodInner ? 1.0
-                          : dist > lodOuter ? lodMin
-                          : lodMin + (1.0 - lodMin)
-                            * (1.0 - (dist - lodInner) / (lodOuter - lodInner));
-
-            const drawCount = Math.max(4, Math.floor(chunk.vertCount[lodLevel] * lodFrac));
 
             gl.uniformMatrix4fv(loc.model, false, m4.identity());
             gl.bindBuffer(gl.ARRAY_BUFFER, chunk.buf[lodLevel]);
@@ -477,7 +465,7 @@ class ChunkManager {
             gl.enableVertexAttribArray(loc.basePos);
             gl.vertexAttribPointer(loc.bladeT,  1, gl.FLOAT, false, 24, 20);
             gl.enableVertexAttribArray(loc.bladeT);
-            gl.drawArrays(gl.TRIANGLE_STRIP, 0, drawCount);
+            gl.drawArrays(gl.TRIANGLE_STRIP, 0, chunk.vertCount[lodLevel]);
         }
     }
 }
@@ -561,7 +549,7 @@ function rebuildGrass() {
     chunkManager.rebuildAll(params);
 }
 
-function draw(viewMatrix, projMatrix, camX = 0, camZ = 0, eyeX = 0, eyeZ = 0) {
+function draw(viewMatrix, projMatrix, camX = 0, camZ = 0) {
     const gl   = _gl;
     const time = performance.now() * 0.001;
 
@@ -572,7 +560,7 @@ function draw(viewMatrix, projMatrix, camX = 0, camZ = 0, eyeX = 0, eyeZ = 0) {
     gl.uniformMatrix4fv(loc.view,    false, viewMatrix);
     gl.uniformMatrix4fv(loc.project, false, projMatrix);
 
-    chunkManager.draw(gl, loc, viewMatrix, projMatrix, params, camX, camZ, eyeX, eyeZ, time);
+    chunkManager.draw(gl, loc, viewMatrix, projMatrix, params, camX, camZ, time);
 }
 
 window.GrassRenderer = { init, draw, rebuildGrass, params };

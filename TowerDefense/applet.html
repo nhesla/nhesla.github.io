@@ -5,12 +5,18 @@
   <style>
     * { margin: 0; padding: 0; }
     body { background: #000; overflow: hidden; }
-    applet { display: block; width: 100%; height: 100vh; }
+    #applet-container { width: 1024px; height: 700px; }
   </style>
 </head>
 <body>
+  <div id="applet-container"></div>
   <script src="https://cjrtnc.leaningtech.com/4.2/loader.js"></script>
-  <script>cheerpjInit({ version: 8 });</script>
-  <APPLET ARCHIVE="TowerDefenseFinal.jar" CODE="TowerDefenseFinal" WIDTH=1024 HEIGHT=700></APPLET>
+  <script>
+    (async () => {
+      await cheerpjInit({ version: 8 });
+      cheerpjCreateDisplay(1024, 700, document.getElementById('applet-container'));
+      await cheerpjRunJar("/app/TowerDefenseFinal.jar");
+    })();
+  </script>
 </body>
 </html>
