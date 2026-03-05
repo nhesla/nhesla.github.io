@@ -1,5 +1,6 @@
 import React, { Component } from "react";
-import { cardInfo } from "./CardImporter";
+import { cardInfo, Card } from "./CardImporter";
+import Importer from "./CardImporter";
 
 interface CardDescriptionProps {
   selectedCard: {
@@ -8,16 +9,18 @@ interface CardDescriptionProps {
     isDFC: boolean;
     isFlip: boolean;
   } | null;
+  onDeckUpdate: (deckList: Card[], game: string) => void;
 }
 
 interface CardDescriptionState {
   showBack: boolean;
+  importerOpen: boolean;
 }
 
 class CardDescription extends Component<CardDescriptionProps, CardDescriptionState> {
   constructor(props: CardDescriptionProps) {
     super(props);
-    this.state = { showBack: false };
+    this.state = { showBack: false, importerOpen: false };
   }
 
   componentDidMount() {
@@ -29,7 +32,6 @@ class CardDescription extends Component<CardDescriptionProps, CardDescriptionSta
   }
 
   componentDidUpdate(prevProps: CardDescriptionProps) {
-    // Reset to front face if selected card changes
     if (prevProps.selectedCard !== this.props.selectedCard) {
       this.setState({ showBack: false });
     }
@@ -41,42 +43,90 @@ class CardDescription extends Component<CardDescriptionProps, CardDescriptionSta
     }
   };
 
+  handleDeckUpdate = (deckList: Card[], game: string) => {
+    this.props.onDeckUpdate(deckList, game);
+    this.setState({ importerOpen: false });
+  };
+
   render() {
     const { selectedCard } = this.props;
-    const { showBack } = this.state;
+    const { showBack, importerOpen } = this.state;
 
-    if (!selectedCard || selectedCard.info.length === 0) return null;
+    const isDual = selectedCard ? selectedCard.info.length > 1 : false;
+    const currentFace = selectedCard
+      ? (showBack && isDual ? selectedCard.info[1] : selectedCard.info[0])
+      : null;
 
-    const { info, isFlip, isSplit } = selectedCard;
-    const isDual = info.length > 1;
-
-    const currentFace = showBack && isDual ? info[1] : info[0];
     const imageStyle: React.CSSProperties = {
       width: "266px",
       height: "370px",
-      transform: isFlip && showBack ? "rotate(180deg)" : "none",
-      transition: "transform 0.3s ease-in-out"
+      transform: selectedCard?.isFlip && showBack ? "rotate(180deg)" : "none",
+      transition: "transform 0.3s ease-in-out",
     };
-    
+
     return (
-      <div style={{ padding: "2px", width: "300px", height: "700px", overflowY: 'scroll' }}>
-        <img src={currentFace.imageUrl} alt={currentFace.name} style={imageStyle} />
-        <div>
-          {isSplit ? (
+      <div style={{ position: "relative", width: "300px", flexShrink: 0 }}>
+
+        {/* ── Import tab ── */}
+        <div
+          onClick={() => this.setState({ importerOpen: !importerOpen })}
+          style={{
+            background: "#44444488",
+            color: "white",
+            textAlign: "center",
+            padding: "6px 0",
+            cursor: "pointer",
+            userSelect: "none",
+            fontSize: "13px",
+            borderBottom: "1px solid #666",
+          }}
+        >
+          {importerOpen ? "▲ Close Import" : "▼ Import Deck"}
+        </div>
+
+        {/* ── Importer drawer ── */}
+        {importerOpen && (
+          <div style={{
+            position: "absolute",
+            top: "31px",
+            left: 0,
+            right: 0,
+            background: "#222222ee",
+            zIndex: 9,
+            backdropFilter: "blur(4px)",
+            borderBottom: "1px solid #555",
+          }}>
+            <Importer onDeckUpdate={this.handleDeckUpdate} />
+          </div>
+        )}
+
+        {/* ── Card details ── */}
+        <div style={{ padding: "2px", height: "700px", overflowY: "scroll" }}>
+          {selectedCard && currentFace ? (
             <>
-              <h3>{info[0].name}</h3>
-              <p>{info[0].text}</p>
-              <h3>{info[1].name}</h3>
-              <p>{info[1].text}</p>
+              <img src={currentFace.imageUrl} alt={currentFace.name} style={imageStyle} />
+              <div>
+                {selectedCard.isSplit ? (
+                  <>
+                    <h3>{selectedCard.info[0].name}</h3>
+                    <p>{selectedCard.info[0].text}</p>
+                    <h3>{selectedCard.info[1].name}</h3>
+                    <p>{selectedCard.info[1].text}</p>
+                  </>
+                ) : (
+                  <>
+                    <h3>{currentFace.name}</h3>
+                    <p>{currentFace.text}</p>
+                  </>
+                )}
+              </div>
             </>
           ) : (
-            <>
-            <h3>{currentFace.name}</h3>
-            <p>{currentFace.text}</p>
-            </>
+            <div style={{ color: "#888", padding: "20px", fontSize: "13px" }}>
+              Hover or click a card to see details.
+            </div>
           )}
         </div>
-        
       </div>
     );
   }

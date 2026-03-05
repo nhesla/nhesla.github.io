@@ -4,16 +4,23 @@ interface DraggableProps {
   children: React.ReactNode;
   containerWidth: number;
   containerHeight: number;
-  initialX: number; // Initial X position of the card
-  initialY: number; // Initial Y position of the card
+  initialX: number;
+  initialY: number;
   onPositionChange?: (x: number, y: number) => void;
 }
 
-const Draggable: React.FC<DraggableProps> = ({ children, containerWidth, containerHeight, initialX, initialY, onPositionChange }) => {
+const Draggable: React.FC<DraggableProps> = ({
+  children, containerWidth, containerHeight, initialX, initialY, onPositionChange
+}) => {
   const [isDragging, setIsDragging] = useState(false);
-  const [position, setPosition] = useState({ x: initialX, y: initialY }); // Start from initial positions
+  const [position, setPosition] = useState({ x: initialX, y: initialY });
   const dragStartPos = useRef({ x: 0, y: 0 });
   const cardRef = useRef<HTMLDivElement>(null);
+
+  // Sync position when parent updates initialX/initialY (e.g. after force layout)
+  useEffect(() => {
+    setPosition({ x: initialX, y: initialY });
+  }, [initialX, initialY]);
 
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
     setIsDragging(true);
@@ -25,29 +32,19 @@ const Draggable: React.FC<DraggableProps> = ({ children, containerWidth, contain
 
   const handleMouseMove = (e: MouseEvent) => {
     if (!isDragging) return;
-
-    const newX = Math.max(0, Math.min(containerWidth - cardRef.current!.offsetWidth, e.clientX - dragStartPos.current.x));
+    const newX = Math.max(0, Math.min(containerWidth - cardRef.current!.offsetWidth,  e.clientX - dragStartPos.current.x));
     const newY = Math.max(0, Math.min(containerHeight - cardRef.current!.offsetHeight, e.clientY - dragStartPos.current.y));
-
     setPosition({ x: newX, y: newY });
-
-    if(onPositionChange)
-      onPositionChange(newX, newY);
-    
+    if (onPositionChange) onPositionChange(newX, newY);
   };
 
-  const handleMouseUp = () => {
-    setIsDragging(false);
-    
-  };
+  const handleMouseUp = () => setIsDragging(false);
 
   useEffect(() => {
     const cardElement = cardRef.current;
     if (!cardElement) return;
-
     document.addEventListener('mousemove', handleMouseMove);
     document.addEventListener('mouseup', handleMouseUp);
-
     return () => {
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
@@ -62,17 +59,17 @@ const Draggable: React.FC<DraggableProps> = ({ children, containerWidth, contain
         left: position.x,
         top: position.y,
         cursor: 'grab',
-        border: '1px solid rgba(0, 0, 0, 0.0)',
+        border: '1px solid rgba(0,0,0,0)',
         padding: '0px',
         borderRadius: '0px',
-        backgroundColor: 'rgba(0, 0, 0, 0.0)',
-        boxShadow: '0 2px 5px rgba(0, 0, 0, 0.2)',
+        backgroundColor: 'rgba(0,0,0,0)',
+        boxShadow: '0 2px 5px rgba(0,0,0,0.2)',
       }}
       onMouseDown={handleMouseDown}
-
     >
       {children}
     </div>
   );
 };
+
 export default Draggable;
