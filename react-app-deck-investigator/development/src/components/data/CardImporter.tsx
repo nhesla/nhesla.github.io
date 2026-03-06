@@ -2,7 +2,15 @@ import React, { Component } from "react";
 import { getRandomDeck } from "./SampleDecklists";
 
 interface DeckListProps {
-  onDeckUpdate: (deckList: Card[], game: string) => void;
+  onDeckUpdate: (deckList: Card[], game: string, rawText: string) => void;
+  saves: import("./SaveManager").DeckSave[];
+  currentDecklistText: string;
+  onSave: (name: string) => void;
+  onLoad: (save: import("./SaveManager").DeckSave) => void;
+  onDelete: (name: string) => void;
+  onExportSingle: (save: import("./SaveManager").DeckSave) => void;
+  onExportAll: () => void;
+  onImport: (file: File) => void;
 }
 
 export interface cardInfo {
@@ -102,9 +110,128 @@ function parseYGOTypeLine(typeStr: string): {
   return { superTypes: [], cardTypes, subTypes };
 }
 
+// ── Standalone fetch (used by Comp_Manager when loading a save) ──────────────
+
+export async function fetchCardDataStandalone(listOfCards: string, game: string): Promise<Card[]> {
+  const parsedList = listOfCards
+    .split("\n")
+    .map(line => line.trim())
+    .filter(line => line.length > 0)
+    .map(line => {
+      const match = line.match(/^(\d+)x?\s+(.*)$/i);
+      return match
+        ? { quantity: match[1], name: match[2].trim() }
+        : { quantity: "1", name: line };
+    });
+
+  let fetchedCards: any[] = [];
+
+  const escapeSpecialChars = (str: string) =>
+    str.replace(/[!"#$%&'()*+,.\/:;<=>?@[\\\]^`{|}~]/g, "\\$&");
+
+  if (game === "MTG") {
+    const query = parsedList
+      .map(({ name }) => {
+        const searchName = name.includes(" // ") ? name.split(" // ")[0] : name;
+        return `!"${escapeSpecialChars(searchName)}"`;
+      })
+      .join(" OR ");
+    const res = await fetch(`https://api.scryfall.com/cards/search?q=${encodeURIComponent(query)}`);
+    const data = await res.json();
+    fetchedCards = data.data ?? [];
+  } else if (game === "YGO") {
+    const res = await fetch("https://db.ygoprodeck.com/api/v7/cardinfo.php?num=20000&offset=0");
+    const data = await res.json();
+    fetchedCards = data.data ?? [];
+  } else if (game === "LOR") {
+    const res = await fetch("https://api.lorcana-api.com/bulk/cards");
+    fetchedCards = await res.json();
+  }
+
+  const deckCards: Card[] = parsedList.map(({ name, quantity }, idx) => {
+    const inputName = (name && name.toLowerCase().split(" // ")[0].trim()) || "";
+    const matched = fetchedCards.filter(card => {
+      let cardName = "";
+      if (game === "MTG") cardName = card.card_faces?.[0]?.name?.toLowerCase() || card.name.toLowerCase();
+      else if (game === "YGO") cardName = card.name.toLowerCase();
+      else cardName = (card.Name ?? "").toLowerCase();
+      return cardName === inputName;
+    });
+
+    const info: cardInfo[] = matched.flatMap((card: any) => {
+      if (game === "MTG") {
+        if (card.card_faces && Array.isArray(card.card_faces)) {
+          return card.card_faces.map((face: any) => {
+            const tl = face.type_line || card.type_line || "";
+            const { superTypes, cardTypes, subTypes } = parseMTGTypeLine(tl);
+            return {
+              name: face.name, imageUrl: face.image_uris?.normal || card.image_uris?.normal || "",
+              text: face.oracle_text || "", typeLine: tl, superTypes, cardTypes, subTypes,
+              cost: card.cmc ?? null, keywords: card.keywords ?? [],
+              power: parseStat(face.power ?? card.power), toughness: parseStat(face.toughness ?? card.toughness),
+              manaCost: face.mana_cost || card.mana_cost || null, lore: null, inkable: null, characterName: null,
+            };
+          });
+        } else {
+          const tl = card.type_line || "";
+          const { superTypes, cardTypes, subTypes } = parseMTGTypeLine(tl);
+          return [{
+            name: card.name, imageUrl: card.image_uris?.normal || "",
+            text: card.oracle_text || "", typeLine: tl, superTypes, cardTypes, subTypes,
+            cost: card.cmc ?? null, keywords: card.keywords ?? [],
+            power: parseStat(card.power), toughness: parseStat(card.toughness),
+            manaCost: card.mana_cost || null, lore: null, inkable: null, characterName: null,
+          }];
+        }
+      } else if (game === "YGO") {
+        const typeStr = card.type || "";
+        const { superTypes, cardTypes, subTypes: ts } = parseYGOTypeLine(typeStr);
+        const subTypes = card.race ? [card.race, ...ts] : ts;
+        return [{
+          name: card.name, imageUrl: card.card_images?.[0]?.image_url || "",
+          text: card.desc || "", typeLine: typeStr, superTypes, cardTypes, subTypes,
+          cost: card.level ?? card.rank ?? card.linkval ?? null, keywords: [],
+          power: parseStat(card.atk), toughness: parseStat(card.def),
+          manaCost: null, lore: null, inkable: null, characterName: null,
+        }];
+      } else if (game === "LOR") {
+        const fullName = card.Name ?? "";
+        const typeStr  = card.Type ?? "";
+        const bodyText = card.Body_Text || "";
+        return [{
+          name: fullName, imageUrl: card.Image || "",
+          text: bodyText, typeLine: typeStr,
+          superTypes: [], cardTypes: [typeStr],
+          subTypes: card.Classifications
+            ? (Array.isArray(card.Classifications)
+                ? card.Classifications
+                : card.Classifications.split(",").map((s: string) => s.trim()))
+            : [],
+          cost: card.Cost ?? null, keywords: parseLorcanaKeywords(bodyText),
+          power: parseStat(card.Strength), toughness: parseStat(card.Willpower),
+          manaCost: null, lore: card.Lore ?? null, inkable: card.Inkable ?? null,
+          characterName: parseLorcanaCharacterName(fullName),
+        }];
+      }
+      return [];
+    });
+
+    return {
+      cardname: info.length > 1
+        ? `${info[0]?.name || "UNKNOWN"} // ${info[1]?.name || "UNKNOWN"}`
+        : info[0]?.name || "UNKNOWN",
+      info, isSplit: false, isDFC: false, isFlip: false, quantity,
+      x: 750 - 70 * Math.floor(idx / 8),
+      y: 10 + 80 * (idx % 8),
+    };
+  });
+
+  return deckCards;
+}
+
 // ── Component ─────────────────────────────────────────────────────────────────
 
-class Deck_Manager extends Component<DeckListProps, DeckListState> {
+class CardImporter extends Component<DeckListProps, DeckListState> {
   exampleDecks = {
     MTG: `4x Lightning Bolt\n4x Mountain\n2x Shock`,
     YGO: `3x Dark Magician\n2x Blue-Eyes White Dragon\n1x Monster Reborn`,
@@ -279,7 +406,7 @@ class Deck_Manager extends Component<DeckListProps, DeckListState> {
       });
 
       this.setState({ deck_list: deckCards });
-      this.props.onDeckUpdate(deckCards, game);
+      this.props.onDeckUpdate(deckCards, game, listOfCards);
     } catch (error) {
       console.error("Failed to fetch cards:", error);
     }
@@ -299,6 +426,7 @@ class Deck_Manager extends Component<DeckListProps, DeckListState> {
 
   render() {
     const { list_of_cards, game, sampleDeckName } = this.state;
+    const { saves, currentDecklistText, onSave, onLoad, onDelete, onExportSingle, onExportAll, onImport } = this.props;
 
     return (
       <div style={{ width: "300px", padding: "20px", overflow: "auto", margin: "auto" }}>
@@ -313,7 +441,6 @@ class Deck_Manager extends Component<DeckListProps, DeckListState> {
           </label>
         </div>
 
-        {/* Sample deck name tag */}
         {sampleDeckName && (
           <div style={{
             marginTop: "8px",
@@ -347,9 +474,177 @@ class Deck_Manager extends Component<DeckListProps, DeckListState> {
             Import
           </button>
         </div>
+
+        <SaveLoadPanel
+          saves={saves}
+          hasDeck={!!currentDecklistText}
+          onSave={onSave}
+          onLoad={onLoad}
+          onDelete={onDelete}
+          onExportSingle={onExportSingle}
+          onExportAll={onExportAll}
+          onImport={onImport}
+        />
       </div>
     );
   }
 }
 
-export default Deck_Manager;
+// ── SaveLoadPanel ─────────────────────────────────────────────────────────────
+
+import { DeckSave, formatTimestamp } from "./SaveManager";
+
+interface SaveLoadPanelProps {
+  saves: DeckSave[];
+  hasDeck: boolean;
+  onSave: (name: string) => void;
+  onLoad: (save: DeckSave) => void;
+  onDelete: (name: string) => void;
+  onExportSingle: (save: DeckSave) => void;
+  onExportAll: () => void;
+  onImport: (file: File) => void;
+}
+
+function SaveLoadPanel({
+  saves, hasDeck, onSave, onLoad, onDelete, onExportSingle, onExportAll, onImport,
+}: SaveLoadPanelProps) {
+  const [collapsed,  setCollapsed]  = React.useState(false);
+  const [saveName,   setSaveName]   = React.useState("");
+  const [saveError,  setSaveError]  = React.useState<string | null>(null);
+  const [confirmDel, setConfirmDel] = React.useState<string | null>(null);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+  const handleSave = () => {
+    const name = saveName.trim();
+    if (!name) { setSaveError("Please enter a name."); return; }
+    if (!hasDeck) { setSaveError("Import a deck first."); return; }
+    onSave(name);
+    setSaveName("");
+    setSaveError(null);
+  };
+
+  const handleFileImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) onImport(file);
+    e.target.value = "";
+  };
+
+  const btnStyle = (color: string): React.CSSProperties => ({
+    background: "none", border: "1px solid " + color, borderRadius: 3,
+    color, cursor: "pointer", fontSize: "10px", padding: "2px 6px",
+    whiteSpace: "nowrap",
+  });
+
+  return (
+    <div style={{ marginTop: 20, borderTop: "1px solid #333", paddingTop: 12 }}>
+      <div
+        onClick={() => setCollapsed(c => !c)}
+        style={{ display: "flex", justifyContent: "space-between", cursor: "pointer", marginBottom: 8 }}
+      >
+        <span style={{ color: "#aaa", fontSize: "11px", letterSpacing: "0.05em" }}>SAVES</span>
+        <span style={{ color: "#666", fontSize: "11px" }}>{collapsed ? "▼" : "▲"}</span>
+      </div>
+
+      {!collapsed && (
+        <>
+          {/* Save current deck */}
+          <div style={{ display: "flex", gap: 6, marginBottom: 6 }}>
+            <input
+              value={saveName}
+              onChange={e => { setSaveName(e.target.value); setSaveError(null); }}
+              onKeyDown={e => { if (e.key === "Enter") handleSave(); }}
+              placeholder="Save name..."
+              style={{
+                flex: 1, background: "#111", border: "1px solid #445",
+                borderRadius: 4, color: "white", padding: "4px 8px", fontSize: 11,
+              }}
+            />
+            <button
+              onClick={handleSave}
+              style={{
+                background: "#223", border: "1px solid #88aaff", borderRadius: 4,
+                color: "#88aaff", cursor: "pointer", fontSize: 11, padding: "4px 10px",
+                whiteSpace: "nowrap",
+              }}
+            >
+              Save
+            </button>
+          </div>
+          {saveError && (
+            <div style={{ color: "#e55", fontSize: 10, marginBottom: 6 }}>{saveError}</div>
+          )}
+
+          {/* Save list */}
+          {saves.length === 0 ? (
+            <div style={{ color: "#555", fontSize: 10, marginBottom: 8 }}>No saves yet.</div>
+          ) : (
+            <div style={{ marginBottom: 8 }}>
+              {saves.map(save => (
+                <div key={save.name} style={{
+                  padding: "6px 0", borderBottom: "1px solid #222",
+                }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 4 }}>
+                    <span style={{ color: "#ddd", fontSize: 11, flex: 1, minWidth: 0,
+                      overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      {save.name}
+                    </span>
+                    <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
+                      <button onClick={() => onLoad(save)} style={btnStyle("#88aaff")}>Load</button>
+                      <button onClick={() => onExportSingle(save)} style={btnStyle("#44cc88")}>↓</button>
+                      {confirmDel === save.name ? (
+                        <>
+                          <button onClick={() => { onDelete(save.name); setConfirmDel(null); }} style={btnStyle("#e55")}>Confirm</button>
+                          <button onClick={() => setConfirmDel(null)} style={btnStyle("#888")}>Cancel</button>
+                        </>
+                      ) : (
+                        <button onClick={() => setConfirmDel(save.name)} style={btnStyle("#e55")}>✕</button>
+                      )}
+                    </div>
+                  </div>
+                  <div style={{ color: "#555", fontSize: 9, marginTop: 2 }}>
+                    {save.game} · {formatTimestamp(save.savedAt)}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Export all / Import */}
+          <div style={{ display: "flex", gap: 6 }}>
+            {saves.length > 0 && (
+              <button
+                onClick={onExportAll}
+                style={{
+                  flex: 1, background: "none", border: "1px solid #446",
+                  borderRadius: 4, color: "#aaa", cursor: "pointer",
+                  fontSize: 10, padding: "4px 0",
+                }}
+              >
+                Export all
+              </button>
+            )}
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              style={{
+                flex: 1, background: "none", border: "1px solid #446",
+                borderRadius: 4, color: "#aaa", cursor: "pointer",
+                fontSize: 10, padding: "4px 0",
+              }}
+            >
+              Import JSON
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".json"
+              onChange={handleFileImport}
+              style={{ display: "none" }}
+            />
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+export default CardImporter;

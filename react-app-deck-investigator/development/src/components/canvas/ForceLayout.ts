@@ -2,8 +2,8 @@
 // Runs a fixed number of iterations on import, returns final positions.
 // Cards are treated as nodes, synergy connections as attractive edges.
 
-import { Card } from "./CardImporter";
-import { SynergyConnection } from "./SynergyEngine";
+import { Card } from "../data/CardImporter";
+import { SynergyConnection } from "../data/SynergyEngine";
 
 export interface Position { x: number; y: number; }
 

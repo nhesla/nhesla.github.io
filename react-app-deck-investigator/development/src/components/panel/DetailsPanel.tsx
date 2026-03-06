@@ -1,6 +1,7 @@
 import React, { Component } from "react";
-import { cardInfo, Card } from "./CardImporter";
-import Importer from "./CardImporter";
+import { cardInfo, Card } from "../data/CardImporter";
+import { DeckSave } from "../data/SaveManager";
+import CardImporter from "../data/CardImporter";
 
 interface CardDescriptionProps {
   selectedCard: {
@@ -9,7 +10,15 @@ interface CardDescriptionProps {
     isDFC: boolean;
     isFlip: boolean;
   } | null;
-  onDeckUpdate: (deckList: Card[], game: string) => void;
+  onDeckUpdate: (deckList: Card[], game: string, rawText: string) => void;
+  saves: DeckSave[];
+  currentDecklistText: string;
+  onSave: (name: string) => void;
+  onLoad: (save: DeckSave) => void;
+  onDelete: (name: string) => void;
+  onExportSingle: (save: DeckSave) => void;
+  onExportAll: () => void;
+  onImport: (file: File) => void;
 }
 
 interface CardDescriptionState {
@@ -43,8 +52,8 @@ class CardDescription extends Component<CardDescriptionProps, CardDescriptionSta
     }
   };
 
-  handleDeckUpdate = (deckList: Card[], game: string) => {
-    this.props.onDeckUpdate(deckList, game);
+  handleDeckUpdate = (deckList: Card[], game: string, rawText: string) => {
+    this.props.onDeckUpdate(deckList, game, rawText);
     this.setState({ importerOpen: false });
   };
 
@@ -96,7 +105,17 @@ class CardDescription extends Component<CardDescriptionProps, CardDescriptionSta
             backdropFilter: "blur(4px)",
             borderBottom: "1px solid #555",
           }}>
-            <Importer onDeckUpdate={this.handleDeckUpdate} />
+            <CardImporter
+              onDeckUpdate={this.handleDeckUpdate}
+              saves={this.props.saves}
+              currentDecklistText={this.props.currentDecklistText}
+              onSave={this.props.onSave}
+              onLoad={(save) => { this.props.onLoad(save); this.setState({ importerOpen: false }); }}
+              onDelete={this.props.onDelete}
+              onExportSingle={this.props.onExportSingle}
+              onExportAll={this.props.onExportAll}
+              onImport={this.props.onImport}
+            />
           </div>
         )}
 

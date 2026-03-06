@@ -1,4 +1,3 @@
-
 import { Card, cardInfo } from "./CardImporter";
 
 export type SynergyCategory = "subtype" | "named" | "mechanic" | "triggered" | "redundancy" | "utility" | "role";
@@ -11,6 +10,7 @@ export interface SynergyConnection {
   category: SynergyCategory;
   label: string;
   direction: SynergyDirection;
+  highlightOnly?: boolean;  // if true, participates in layout but draws no visible line
 }
 
 export const SYNERGY_COLORS: Record<SynergyCategory, string> = {
@@ -22,7 +22,6 @@ export const SYNERGY_COLORS: Record<SynergyCategory, string> = {
   utility:    "#88ccff",
   role:       "#ff8833",
 };
-
 
 export const CATEGORY_LABELS: Record<SynergyCategory, string> = {
   subtype:    "Subtype / Tribal",
@@ -46,7 +45,6 @@ function allNames(card: Card): string[] {
   return card.info.map((f: cardInfo) => f.name.toLowerCase());
 }
 
-// Clean array accessors — never crash on missing info
 function getCardTypes(card: Card): string[] {
   return card.info?.[0]?.cardTypes ?? [];
 }
@@ -176,7 +174,6 @@ function detectSubtypeMatter(cards: Card[]): SynergyConnection[] {
 
       for (const target of cards) {
         if (target.cardname === source.cardname) continue;
-        // Use subTypes array directly — no string parsing needed
         if (hasSubType(target, subtype)) {
           connections.push({
             from: source.cardname,
@@ -207,7 +204,6 @@ function detectNamedReferences(cards: Card[]): SynergyConnection[] {
       for (const target of cards) {
         if (target.cardname === source.cardname) continue;
         const tgtNames = allNames(target);
-        // Also check characterName for Lorcana
         const charName = (target.info?.[0]?.characterName ?? "").toLowerCase();
         if (
           tgtNames.some(n => n === referencedName || n.startsWith(referencedName)) ||
@@ -449,18 +445,14 @@ function detectRedundancy(cards: Card[]): SynergyConnection[] {
 
 const BASIC_LAND_TYPES = ["forest", "island", "mountain", "plains", "swamp"];
 
-// Does this card have a given basic land type?
-// Uses subTypes array directly — no text parsing needed.
 function cardHasBasicLandType(card: Card, landType: string): boolean {
   if (!card.info || card.info.length === 0) return false;
-  // subTypes for lands come from the type line e.g. "Basic Land — Forest"
   return getSubTypes(card).some(st => st.toLowerCase() === landType);
 }
 
 function detectUtilityConnections(cards: Card[]): SynergyConnection[] {
   const connections: SynergyConnection[] = [];
 
-  // ── Cards that care about a basic land type ───────────────────────────────
   for (const source of cards) {
     const srcText = allText(source);
 
@@ -490,9 +482,6 @@ function detectUtilityConnections(cards: Card[]): SynergyConnection[] {
     }
   }
 
-  // ── Creature tutors → deck creatures ─────────────────────────────────────
-  // Uses cardTypes array to confirm targets are creatures.
-  // Uses cost field to enforce CMC threshold — no heuristics needed.
   const creatureTutorPattern = /creature card(?:s)? with mana value (\d+) or less.*onto the battlefield|creature card.*onto the battlefield/i;
 
   for (const source of cards) {
@@ -506,9 +495,7 @@ function detectUtilityConnections(cards: Card[]): SynergyConnection[] {
 
     for (const target of cards) {
       if (target.cardname === source.cardname) continue;
-      // Must be a creature per cardTypes — no heuristic needed
       if (!isCreature(target)) continue;
-      // Enforce CMC threshold using stored cost field
       if (threshold !== null) {
         const cost = getCost(target);
         if (cost !== null && cost > threshold) continue;
@@ -522,10 +509,6 @@ function detectUtilityConnections(cards: Card[]): SynergyConnection[] {
     }
   }
 
-  // ── Keyword synergies ─────────────────────────────────────────────────────
-  // Cards that grant a keyword connect to other cards that already have it
-  // (redundancy) or that benefit from it being granted.
-  // Uses the keywords array directly.
   const GRANTABLE_KEYWORDS = ["Flying", "Trample", "Lifelink", "Deathtouch",
                                "Haste", "Vigilance", "First Strike", "Double Strike"];
 
@@ -533,7 +516,6 @@ function detectUtilityConnections(cards: Card[]): SynergyConnection[] {
     const srcText = allText(source);
 
     for (const kw of GRANTABLE_KEYWORDS) {
-      // Does this card GRANT the keyword to others?
       const grantsKw =
         new RegExp(`creatures you control (?:have|gain) ${kw}`, "i").test(srcText) ||
         new RegExp(`target creature gains ${kw}`, "i").test(srcText);
@@ -542,9 +524,6 @@ function detectUtilityConnections(cards: Card[]): SynergyConnection[] {
       for (const target of cards) {
         if (target.cardname === source.cardname) continue;
         if (!isCreature(target)) continue;
-        // Connect to creatures that already have the keyword (redundancy signal)
-        // or that lack it (benefit signal) — for now just connect all creatures
-        // since gaining trample/flying is useful for any attacker
         connections.push({
           from: source.cardname, to: target.cardname,
           category: "utility", label: `grants ${kw.toLowerCase()}`,
@@ -557,12 +536,9 @@ function detectUtilityConnections(cards: Card[]): SynergyConnection[] {
   return connections;
 }
 
-
 // ─── Role Connections ─────────────────────────────────────────────────────────
-// Groups cards by the functional role they serve in the deck.
-// Cards sharing a role connect to each other with direction "none" —
-// it's a peer grouping, not a directed relationship.
-// This catches decks like Burn where few other synergy types fire.
+// highlightOnly: true — these connections influence force layout clustering
+// but draw no visible lines. The legend shows them as highlight groups instead.
 
 interface RoleRule {
   label: string;
@@ -598,7 +574,6 @@ const ROLE_RULES: RoleRule[] = [
       if (!isCreature(card)) return false;
       const cost = getCost(card);
       const text = allText(card);
-      // Cheap creature with haste, or a known aggro keyword
       return (
         cost !== null && cost <= 2 &&
         (getKeywords(card).some(k => ["Haste","First Strike","Double Strike","Menace"].includes(k)) ||
@@ -646,7 +621,6 @@ function detectRoleConnections(cards: Card[]): SynergyConnection[] {
 
   for (const role of ROLE_RULES) {
     const matches = cards.filter(role.test);
-    // Only emit role connections if there are at least 2 cards in the role
     if (matches.length < 2) continue;
     for (let i = 0; i < matches.length; i++) {
       for (let j = i + 1; j < matches.length; j++) {
@@ -656,6 +630,7 @@ function detectRoleConnections(cards: Card[]): SynergyConnection[] {
           category: "role",
           label: role.label,
           direction: "none",
+          highlightOnly: true,  // clusters in layout, invisible in canvas
         });
       }
     }
