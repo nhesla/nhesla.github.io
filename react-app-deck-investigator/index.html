@@ -6,12 +6,20 @@
   <title>Deck Investigator — nhesla</title>
   <link rel="stylesheet" href="../assets/style.css"/>
   <style>
-    /* When notes are hidden, embed-col takes full width */
-    .project-layout.notes-hidden .notes-col {
+    /* Default: notes hidden, embed takes full width */
+    #projectLayout {
+      grid-template-columns: 1fr 0px;
+    }
+    #notesCol {
       display: none;
     }
-    .project-layout.notes-hidden .embed-col {
-      flex: 1;
+
+    /* Notes visible */
+    #projectLayout.notes-visible {
+      grid-template-columns: 1fr 380px;
+    }
+    #projectLayout.notes-visible #notesCol {
+      display: flex;
     }
 
     .notes-toggle-btn {
@@ -24,8 +32,7 @@
       padding: 3px 10px;
       cursor: pointer;
       letter-spacing: 0.05em;
-      margin-left: 12px;
-      vertical-align: middle;
+      margin-left: 8px;
     }
     .notes-toggle-btn:hover {
       color: white;
@@ -55,6 +62,9 @@
       <span class="tag tag-blue">Vite</span>
       <span class="tag tag-blue">APIs</span>
       <span class="tag tag-neutral">Personal</span>
+      <button class="notes-toggle-btn" onclick="toggleNotes()" id="notesBtn">
+        // Dev Notes ▶
+      </button>
     </div>
   </div>
 
@@ -68,14 +78,11 @@
       <div class="embed-bar">
         <div class="embed-dot"></div>
         TCG Deck Synergy Visualizer — React · TypeScript · Vite
-        <button class="notes-toggle-btn" onclick="toggleNotes()" id="notesBtn">
-          // Dev Notes ▶
-        </button>
       </div>
     </div>
 
     <!-- DEV NOTES -->
-    <div class="notes-col" id="notesCol" style="display:none">
+    <div class="notes-col" id="notesCol">
       <div class="notes-header">
         <span class="notes-heading">// Dev Notes</span>
       </div>
@@ -132,11 +139,10 @@
 
   <script>
     function toggleNotes() {
-      const col = document.getElementById('notesCol');
-      const btn = document.getElementById('notesBtn');
-      const visible = col.style.display !== 'none';
-      col.style.display = visible ? 'none' : '';
-      btn.textContent = visible ? '// Dev Notes ▶' : '// Dev Notes ◀';
+      const layout = document.getElementById('projectLayout');
+      const btn    = document.getElementById('notesBtn');
+      const visible = layout.classList.toggle('notes-visible');
+      btn.textContent = visible ? '// Dev Notes ◀' : '// Dev Notes ▶';
     }
   </script>
 
