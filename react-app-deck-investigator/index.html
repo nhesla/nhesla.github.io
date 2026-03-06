@@ -5,91 +5,31 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Deck Investigator — nhesla</title>
   <link rel="stylesheet" href="../assets/style.css"/>
-  <script type="module" src="./assets/index-SAL9SGON.js"></script>
-  <link rel="stylesheet" href="./assets/index-CVsGNJJn.css"/>
   <style>
-    /* Keep the page from scrolling — app fills remaining space */
-    html, body {
-      height: 100%;
-      overflow: hidden;
+    /* When notes are hidden, embed-col takes full width */
+    .project-layout.notes-hidden .notes-col {
+      display: none;
     }
-
-    .deck-investigator-wrap {
-      display: flex;
-      flex-direction: column;
-      height: calc(100vh - var(--nav-height, 48px));
-      overflow: hidden;
-      position: relative;
-    }
-
-    /* Page header sits above the app, compact */
-    .deck-investigator-wrap .page-header {
-      flex-shrink: 0;
-      padding: 8px 20px 4px;
-      margin: 0;
-    }
-
-    /* React root fills remaining height */
-    #root {
+    .project-layout.notes-hidden .embed-col {
       flex: 1;
-      overflow: hidden;
-      min-height: 0;
     }
 
-    /* Dev notes — floating toggle button */
-    .notes-toggle {
-      position: fixed;
-      bottom: 20px;
-      right: 20px;
-      z-index: 100;
-      background: #1a1a2e;
+    .notes-toggle-btn {
+      background: none;
       border: 1px solid #445;
-      border-radius: 6px;
-      color: #aaa;
+      border-radius: 4px;
+      color: #888;
       font-size: 11px;
-      padding: 6px 12px;
+      font-family: monospace;
+      padding: 3px 10px;
       cursor: pointer;
       letter-spacing: 0.05em;
-      user-select: none;
+      margin-left: 12px;
+      vertical-align: middle;
     }
-    .notes-toggle:hover { color: white; border-color: #88aaff; }
-
-    /* Dev notes drawer — slides up from bottom */
-    .notes-drawer {
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      z-index: 99;
-      background: #0d0d1aee;
-      border-top: 1px solid #445;
-      backdrop-filter: blur(6px);
-      transform: translateY(100%);
-      transition: transform 0.25s ease;
-      max-height: 40vh;
-      overflow-y: auto;
-      padding: 16px 24px 24px;
-    }
-    .notes-drawer.open {
-      transform: translateY(0);
-    }
-
-    .notes-drawer .notes-heading {
-      font-family: monospace;
-      color: #88aaff;
-      font-size: 12px;
-      display: block;
-      margin-bottom: 12px;
-    }
-
-    .notes-drawer-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 16px;
-    }
-
-    @media (max-width: 700px) {
-      .notes-drawer-grid { grid-template-columns: 1fr; }
+    .notes-toggle-btn:hover {
+      color: white;
+      border-color: #88aaff;
     }
   </style>
 </head>
@@ -107,62 +47,96 @@
     <a href="../challenges/index.html" class="nav-challenges-link">&gt;_ Challenges</a>
   </nav>
 
-  <div class="deck-investigator-wrap">
-
-    <div class="page-header">
-      <h1>TCG Deck Synergy Visualizer</h1>
-      <div class="tag-row">
-        <span class="tag tag-blue">React</span>
-        <span class="tag tag-blue">TypeScript</span>
-        <span class="tag tag-blue">Vite</span>
-        <span class="tag tag-blue">APIs</span>
-        <span class="tag tag-neutral">Personal</span>
-      </div>
+  <div class="page-header">
+    <h1>TCG Deck Synergy Visualizer</h1>
+    <div class="tag-row">
+      <span class="tag tag-blue">React</span>
+      <span class="tag tag-blue">TypeScript</span>
+      <span class="tag tag-blue">Vite</span>
+      <span class="tag tag-blue">APIs</span>
+      <span class="tag tag-neutral">Personal</span>
     </div>
-
-    <!-- React mounts here -->
-    <div id="root"></div>
-
   </div>
 
-  <!-- Dev notes toggle button -->
-  <button class="notes-toggle" onclick="toggleNotes()">// Dev Notes ▲</button>
+  <div class="project-layout" id="projectLayout">
 
-  <!-- Dev notes drawer -->
-  <div class="notes-drawer" id="notesDrawer">
-    <span class="notes-heading">// Dev Notes</span>
-    <div class="notes-drawer-grid">
-
-      <div class="note-block">
-        <div class="note-label note-label-green">What went well</div>
-        <div class="note-text">
-          <p>Write your notes here.</p>
-        </div>
+    <!-- EMBED -->
+    <div class="embed-col">
+      <div class="embed-wrap">
+        <iframe src="app.html" title="TCG Deck Synergy Visualizer"></iframe>
       </div>
-
-      <div class="note-block">
-        <div class="note-label note-label-blue">What I learned</div>
-        <div class="note-text">
-          <p>Write your notes here.</p>
-        </div>
+      <div class="embed-bar">
+        <div class="embed-dot"></div>
+        TCG Deck Synergy Visualizer — React · TypeScript · Vite
+        <button class="notes-toggle-btn" onclick="toggleNotes()" id="notesBtn">
+          // Dev Notes ▶
+        </button>
       </div>
-
-      <div class="note-block">
-        <div class="note-label note-label-red">Mistakes &amp; what I'd do differently</div>
-        <div class="note-text">
-          <p>Write your notes here.</p>
-        </div>
-      </div>
-
     </div>
+
+    <!-- DEV NOTES -->
+    <div class="notes-col" id="notesCol" style="display:none">
+      <div class="notes-header">
+        <span class="notes-heading">// Dev Notes</span>
+      </div>
+      <div class="notes-body">
+
+        <div class="note-block">
+          <div class="note-label note-label-green">What went well</div>
+          <div class="note-text">
+            <p>Write your notes here.</p>
+          </div>
+        </div>
+
+        <div class="note-divider"></div>
+
+        <div class="note-block">
+          <div class="note-label note-label-blue">What I learned</div>
+          <div class="note-text">
+            <p>Write your notes here.</p>
+          </div>
+        </div>
+
+        <div class="note-divider"></div>
+
+        <div class="note-block">
+          <div class="note-label note-label-red">Mistakes &amp; what I'd do differently</div>
+          <div class="note-text">
+            <p>Write your notes here.</p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <div class="project-nav-row">
+    <span class="project-nav-label">Other Projects</span>
+    <a href="../TowerDefense/index.html" class="proj-mini-card">
+      <div class="mini-thumb" style="background:rgba(255,107,107,0.1)">🗼</div>
+      <div><div class="mini-name">Tower Defense</div><div class="mini-lang">Java · Applet</div></div>
+    </a>
+    <a href="../phaser-tank-game/index.html" class="proj-mini-card">
+      <div class="mini-thumb" style="background:rgba(91,200,255,0.1)">🚀</div>
+      <div><div class="mini-name">Tank Game</div><div class="mini-lang">JavaScript · Phaser.js</div></div>
+    </a>
+    <a href="../Vulcans_bad_suit_v1.i/index.html" class="proj-mini-card">
+      <div class="mini-thumb" style="background:rgba(200,150,255,0.1)">💣</div>
+      <div><div class="mini-name">Vulcan's Suit</div><div class="mini-lang">GameMaker</div></div>
+    </a>
+    <a href="../grass-webgl-shader/index.html" class="proj-mini-card">
+      <div class="mini-thumb" style="background:rgba(127,255,106,0.1)">🌿</div>
+      <div><div class="mini-name">Grass Shader</div><div class="mini-lang">WebGL · GLSL</div></div>
+    </a>
   </div>
 
   <script>
     function toggleNotes() {
-      const drawer = document.getElementById('notesDrawer');
-      const btn    = document.querySelector('.notes-toggle');
-      const open   = drawer.classList.toggle('open');
-      btn.textContent = open ? '// Dev Notes ▼' : '// Dev Notes ▲';
+      const col = document.getElementById('notesCol');
+      const btn = document.getElementById('notesBtn');
+      const visible = col.style.display !== 'none';
+      col.style.display = visible ? 'none' : '';
+      btn.textContent = visible ? '// Dev Notes ▶' : '// Dev Notes ◀';
     }
   </script>
 
