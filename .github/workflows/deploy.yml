@@ -30,10 +30,27 @@ jobs:
         working-directory: react-app-deck-investigator/development
         run: npm run build
 
-      - name: Copy build output to portfolio directory
+      - name: Extract hashed asset filenames
+        id: assets
         run: |
-          rm -rf react-app-deck-investigator/index.html react-app-deck-investigator/assets
-          cp -r react-app-deck-investigator/development/dist/. react-app-deck-investigator/
+          JS_FILE=$(ls react-app-deck-investigator/development/dist/assets/*.js | xargs basename)
+          CSS_FILE=$(ls react-app-deck-investigator/development/dist/assets/*.css | xargs basename)
+          echo "js=$JS_FILE" >> $GITHUB_OUTPUT
+          echo "css=$CSS_FILE" >> $GITHUB_OUTPUT
+
+      - name: Copy build assets to portfolio directory
+        run: |
+          rm -rf react-app-deck-investigator/assets
+          cp -r react-app-deck-investigator/development/dist/assets react-app-deck-investigator/assets
+
+      - name: Patch index.html with correct asset filenames
+        run: |
+          sed -i \
+            "s|assets/index-[^\"]*\.js|assets/${{ steps.assets.outputs.js }}|g" \
+            react-app-deck-investigator/index.html
+          sed -i \
+            "s|assets/index-[^\"]*\.css|assets/${{ steps.assets.outputs.css }}|g" \
+            react-app-deck-investigator/index.html
 
       - name: Commit and push built files
         run: |

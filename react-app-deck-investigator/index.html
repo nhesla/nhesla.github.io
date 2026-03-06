@@ -1,14 +1,170 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/react-app-deck-investigator/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Vite + React + TS</title>
-    <script type="module" crossorigin src="/react-app-deck-investigator/assets/index-SAL9SGON.js"></script>
-    <link rel="stylesheet" crossorigin href="/react-app-deck-investigator/assets/index-CVsGNJJn.css">
-  </head>
-  <body>
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Deck Investigator — nhesla</title>
+  <link rel="stylesheet" href="../assets/style.css"/>
+  <script type="module" src="./assets/index-SAL9SGON.js"></script>
+  <link rel="stylesheet" href="./assets/index-CVsGNJJn.css"/>
+  <style>
+    /* Keep the page from scrolling — app fills remaining space */
+    html, body {
+      height: 100%;
+      overflow: hidden;
+    }
+
+    .deck-investigator-wrap {
+      display: flex;
+      flex-direction: column;
+      height: calc(100vh - var(--nav-height, 48px));
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* Page header sits above the app, compact */
+    .deck-investigator-wrap .page-header {
+      flex-shrink: 0;
+      padding: 8px 20px 4px;
+      margin: 0;
+    }
+
+    /* React root fills remaining height */
+    #root {
+      flex: 1;
+      overflow: hidden;
+      min-height: 0;
+    }
+
+    /* Dev notes — floating toggle button */
+    .notes-toggle {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      z-index: 100;
+      background: #1a1a2e;
+      border: 1px solid #445;
+      border-radius: 6px;
+      color: #aaa;
+      font-size: 11px;
+      padding: 6px 12px;
+      cursor: pointer;
+      letter-spacing: 0.05em;
+      user-select: none;
+    }
+    .notes-toggle:hover { color: white; border-color: #88aaff; }
+
+    /* Dev notes drawer — slides up from bottom */
+    .notes-drawer {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      z-index: 99;
+      background: #0d0d1aee;
+      border-top: 1px solid #445;
+      backdrop-filter: blur(6px);
+      transform: translateY(100%);
+      transition: transform 0.25s ease;
+      max-height: 40vh;
+      overflow-y: auto;
+      padding: 16px 24px 24px;
+    }
+    .notes-drawer.open {
+      transform: translateY(0);
+    }
+
+    .notes-drawer .notes-heading {
+      font-family: monospace;
+      color: #88aaff;
+      font-size: 12px;
+      display: block;
+      margin-bottom: 12px;
+    }
+
+    .notes-drawer-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+
+    @media (max-width: 700px) {
+      .notes-drawer-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <nav class="site-nav">
+    <a href="../index.html" class="nav-home">nhesla</a>
+    <div class="nav-project-links">
+      <a href="../TowerDefense/index.html"               class="nav-pill">Tower Defense</a>
+      <a href="../phaser-tank-game/index.html"            class="nav-pill">Tank Game</a>
+      <a href="../Vulcans_bad_suit_v1.i/index.html"      class="nav-pill">Vulcan's Suit</a>
+      <a href="../grass-webgl-shader/index.html"          class="nav-pill">Grass Shader</a>
+      <a href="index.html"                                class="nav-pill active">Deck Investigator</a>
+    </div>
+    <a href="../challenges/index.html" class="nav-challenges-link">&gt;_ Challenges</a>
+  </nav>
+
+  <div class="deck-investigator-wrap">
+
+    <div class="page-header">
+      <h1>TCG Deck Synergy Visualizer</h1>
+      <div class="tag-row">
+        <span class="tag tag-blue">React</span>
+        <span class="tag tag-blue">TypeScript</span>
+        <span class="tag tag-blue">Vite</span>
+        <span class="tag tag-blue">APIs</span>
+        <span class="tag tag-neutral">Personal</span>
+      </div>
+    </div>
+
+    <!-- React mounts here -->
     <div id="root"></div>
-  </body>
+
+  </div>
+
+  <!-- Dev notes toggle button -->
+  <button class="notes-toggle" onclick="toggleNotes()">// Dev Notes ▲</button>
+
+  <!-- Dev notes drawer -->
+  <div class="notes-drawer" id="notesDrawer">
+    <span class="notes-heading">// Dev Notes</span>
+    <div class="notes-drawer-grid">
+
+      <div class="note-block">
+        <div class="note-label note-label-green">What went well</div>
+        <div class="note-text">
+          <p>Write your notes here.</p>
+        </div>
+      </div>
+
+      <div class="note-block">
+        <div class="note-label note-label-blue">What I learned</div>
+        <div class="note-text">
+          <p>Write your notes here.</p>
+        </div>
+      </div>
+
+      <div class="note-block">
+        <div class="note-label note-label-red">Mistakes &amp; what I'd do differently</div>
+        <div class="note-text">
+          <p>Write your notes here.</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    function toggleNotes() {
+      const drawer = document.getElementById('notesDrawer');
+      const btn    = document.querySelector('.notes-toggle');
+      const open   = drawer.classList.toggle('open');
+      btn.textContent = open ? '// Dev Notes ▼' : '// Dev Notes ▲';
+    }
+  </script>
+
+</body>
 </html>
