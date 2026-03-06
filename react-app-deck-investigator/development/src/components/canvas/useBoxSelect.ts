@@ -110,7 +110,7 @@ export function useBoxSelect(
     setGroupDragBasePositions(null);
   };
 
-  const handleSelectedCardMouseDown = (card: Card, e: React.MouseEvent) => {
+  const handleSelectedCardMouseDown = (_card: Card, e: React.MouseEvent) => {
     e.stopPropagation();
     if (e.button !== 0) return;
     const rect = (e.currentTarget.closest("[data-canvas]") as HTMLElement)?.getBoundingClientRect();
