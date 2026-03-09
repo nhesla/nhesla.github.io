@@ -36,7 +36,6 @@ interface CanvasProps {
   ellipses: CanvasEllipse[];
   onEllipsesChange: (ellipses: CanvasEllipse[]) => void;
   disabledCards: Set<string>;
-  onToggleDisabled: (cardname: string) => void;
   onClickCard: (card: Card) => void;
   onMouseOver: (card: Card) => void;
   onMouseLeave: () => void;
@@ -66,7 +65,6 @@ const Canvas: React.FC<CanvasProps> = ({
   ellipses,
   onEllipsesChange,
   disabledCards,
-  onToggleDisabled,
   onClickCard,
   onMouseOver,
   onMouseLeave,
@@ -470,7 +468,7 @@ const Canvas: React.FC<CanvasProps> = ({
 
   // ── Ellipse right-click → modal ─────────────────────────────────────────────
 
-  const handleEllipseRightClick = (ellipse: CanvasEllipse, e: React.MouseEvent) => {
+  const handleEllipseRightClick = (ellipse: CanvasEllipse, _e: React.MouseEvent) => {
     setSelectedEllipseId(ellipse.id);
     setPendingConnection({
       mode: "ellipse" as any,

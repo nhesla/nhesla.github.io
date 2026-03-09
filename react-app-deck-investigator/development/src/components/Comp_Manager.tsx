@@ -169,11 +169,6 @@ const Comp_Manager: React.FC = () => {
         ellipses={ellipses}
         onEllipsesChange={setEllipses}
         disabledCards={disabledCards}
-        onToggleDisabled={(name) => setDisabledCards(prev => {
-          const next = new Set(prev);
-          next.has(name) ? next.delete(name) : next.add(name);
-          return next;
-        })}
         onClickCard={onClickCard}
         onMouseOver={onMouseOver}
         onMouseLeave={onMouseLeave}
@@ -195,7 +190,7 @@ const Comp_Manager: React.FC = () => {
         onChangePrinting={(cardname, imageUrl) =>
           setPrintingOverrides(prev => ({ ...prev, [cardname]: imageUrl }))
         }
-        onToggleDisabled={(name) => setDisabledCards(prev => {
+        onToggleDisabled={(name: string) => setDisabledCards(prev => {
           const next = new Set(prev);
           next.has(name) ? next.delete(name) : next.add(name);
           return next;

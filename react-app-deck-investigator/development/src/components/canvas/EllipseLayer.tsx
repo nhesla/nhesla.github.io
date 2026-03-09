@@ -1,5 +1,5 @@
 import React, { useRef } from "react";
-import { CanvasEllipse, pointInEllipse } from "./CanvasEllipse";
+import { CanvasEllipse } from "./CanvasEllipse";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
