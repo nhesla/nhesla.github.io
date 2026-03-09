@@ -11,6 +11,8 @@ export interface SynergyConnection {
   label: string;
   direction: SynergyDirection;
   highlightOnly?: boolean;  // if true, participates in layout but draws no visible line
+  solid?: boolean;          // if true, renders as solid line/filled dot instead of dashed/hollow
+  color?: string;           // user-overridden color; falls back to labelToColor(label) if unset
 }
 
 export const SYNERGY_COLORS: Record<SynergyCategory, string> = {

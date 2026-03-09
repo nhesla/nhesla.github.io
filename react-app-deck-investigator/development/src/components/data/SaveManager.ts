@@ -10,6 +10,10 @@ export interface DeckSave {
   decklistText: string;
   positions: Record<string, Position>;
   manualConnections: ManualConnection[];
+  disabledCards?: string[];
+  printingOverrides?: Record<string, string>;
+  ellipses?: any[];
+  synergyConnections?: any[];
 }
 
 const STORAGE_KEY = "deck-investigator:saves";

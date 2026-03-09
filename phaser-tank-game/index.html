@@ -8,17 +8,8 @@
 </head>
 <body>
 
-  <nav class="site-nav">
-    <a href="../index.html" class="nav-home">nhesla</a>
-    <div class="nav-project-links">
-      <a href="../TowerDefense/index.html"               class="nav-pill">Tower Defense</a>
-      <a href="index.html"                                class="nav-pill active">Tank Game</a>
-      <a href="../Vulcans_bad_suit_v1.i/index.html"      class="nav-pill">Vulcan's Suit</a>
-      <a href="../grass-webgl-shader/index.html"          class="nav-pill">Grass Shader</a>
-      <a href="../react-app-deck-investigator/index.html" class="nav-pill">Deck Investigator</a>
-    </div>
-    <a href="../challenges/index.html" class="nav-challenges-link">&gt;_ Challenges</a>
-  </nav>
+  <div id="site-nav"></div>
+  <script src="../assets/nav.js"></script>
 
   <div class="page-header">
     <h1>Tank Game</h1>
@@ -81,25 +72,8 @@
     </div>
   </div>
 
-  <div class="project-nav-row">
-    <span class="project-nav-label">Other Projects</span>
-    <a href="../TowerDefense/index.html" class="proj-mini-card">
-      <div class="mini-thumb" style="background:rgba(255,107,107,0.1)">🗼</div>
-      <div><div class="mini-name">Tower Defense</div><div class="mini-lang">Java · Applet</div></div>
-    </a>
-    <a href="../Vulcans_bad_suit_v1.i/index.html" class="proj-mini-card">
-      <div class="mini-thumb" style="background:rgba(200,150,255,0.1)">💣</div>
-      <div><div class="mini-name">Vulcan's Suit</div><div class="mini-lang">GameMaker</div></div>
-    </a>
-    <a href="../grass-webgl-shader/index.html" class="proj-mini-card">
-      <div class="mini-thumb" style="background:rgba(127,255,106,0.1)">🌿</div>
-      <div><div class="mini-name">Grass Shader</div><div class="mini-lang">WebGL · GLSL</div></div>
-    </a>
-    <a href="../react-app-deck-investigator/index.html" class="proj-mini-card">
-      <div class="mini-thumb" style="background:rgba(255,200,50,0.1)">🃏</div>
-      <div><div class="mini-name">Deck Investigator</div><div class="mini-lang">React · TypeScript</div></div>
-    </a>
-  </div>
+  <div id="other-projects"></div>
+  
 <script>
   const gameFrame = document.querySelector('.embed-wrap iframe');
   gameFrame.addEventListener('load', () => gameFrame.contentWindow.focus());

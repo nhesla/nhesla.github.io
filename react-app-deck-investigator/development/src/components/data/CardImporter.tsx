@@ -58,6 +58,7 @@ interface DeckListState {
   game: string;
   deck_list: Card[];
   sampleDeckName: string | undefined;
+  failedCards: string[];
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -110,19 +111,102 @@ function parseYGOTypeLine(typeStr: string): {
   return { superTypes: [], cardTypes, subTypes };
 }
 
+// ── Decklist parser ──────────────────────────────────────────────────────────
+
+interface ParsedLine {
+  quantity: string;
+  name: string;
+  setCode?: string;
+  collectorNumber?: string;
+}
+
+// Lines that are definitely comments/section headers — skip entirely.
+// Only matches lines that START with these markers, never strips mid-name.
+function isCommentLine(line: string): boolean {
+  return (
+    line.startsWith("//") ||
+    line.startsWith("#")  ||
+    line.startsWith("--")
+  );
+}
+
+export function parseDecklistLine(raw: string, game: string): ParsedLine | null {
+  // Normalise line endings and trim
+  const line = raw.replace(/\r/g, "").trim();
+  if (!line) return null;
+  if (isCommentLine(line)) return null;
+
+  let quantity = "1";
+  let rest     = line;
+
+  // ── Extract leading quantity ───────────────────────────────────────────────
+  // Handles: "4x Name", "4 Name", "4X Name"
+  const leadingQty = rest.match(/^(\d+)x?\s+(.+)$/i);
+  if (leadingQty) {
+    quantity = leadingQty[1];
+    rest     = leadingQty[2].trim();
+  }
+
+  // ── MTG: MTGA format "Name (SET) 123" ─────────────────────────────────────
+  // Only strip for MTG since Lorcana names can contain parentheses
+  if (game === "MTG") {
+    const mtga = rest.match(/^(.+?)\s+\(([A-Z0-9]{2,6})\)\s+(\d+)\s*$/i);
+    if (mtga) {
+      return { quantity, name: mtga[1].trim(), setCode: mtga[2].toUpperCase(), collectorNumber: mtga[3] };
+    }
+  }
+
+  // ── All games: bracket notation "Name [SET] #123" or "Name [SET]" ─────────
+  const bracket = rest.match(/^(.+?)\s+\[([A-Z0-9]{2,6})\](?:\s+#?(\d+))?\s*$/i);
+  if (bracket) {
+    return { quantity, name: bracket[1].trim(), setCode: bracket[2].toUpperCase(), collectorNumber: bracket[3] };
+  }
+
+  // ── YGO: trailing quantity "Name x3" ──────────────────────────────────────
+  if (game === "YGO") {
+    const ygoSuffix = rest.match(/^(.+?)\s+x(\d+)\s*$/i);
+    if (ygoSuffix) {
+      return { quantity: ygoSuffix[2], name: ygoSuffix[1].trim() };
+    }
+  }
+
+  // ── Lorcana: middle dot separator "Name · subtitle · number" ──────────────
+  // U+00B7 is the middle dot used by Dreamborn exports
+  if (game === "LOR" && rest.includes("·")) {
+    const lorParts = rest.split("·");
+    return { quantity, name: lorParts[0].trim() };
+  }
+
+  // ── Fallback: use rest as name ─────────────────────────────────────────────
+  return { quantity, name: rest };
+}
+
+// ── Merge duplicate card names, summing quantities ───────────────────────────
+
+function mergeDuplicates(parsedList: ParsedLine[]): ParsedLine[] {
+  const seen = new Map<string, ParsedLine>();
+  for (const entry of parsedList) {
+    const key = entry.name.toLowerCase();
+    if (seen.has(key)) {
+      const existing = seen.get(key)!;
+      seen.set(key, {
+        ...existing,
+        quantity: String(parseInt(existing.quantity) + parseInt(entry.quantity)),
+      });
+    } else {
+      seen.set(key, { ...entry });
+    }
+  }
+  return Array.from(seen.values());
+}
+
 // ── Standalone fetch (used by Comp_Manager when loading a save) ──────────────
 
 export async function fetchCardDataStandalone(listOfCards: string, game: string): Promise<Card[]> {
-  const parsedList = listOfCards
+  const parsedList: ParsedLine[] = mergeDuplicates(listOfCards
     .split("\n")
-    .map(line => line.trim())
-    .filter(line => line.length > 0)
-    .map(line => {
-      const match = line.match(/^(\d+)x?\s+(.*)$/i);
-      return match
-        ? { quantity: match[1], name: match[2].trim() }
-        : { quantity: "1", name: line };
-    });
+    .map(line => parseDecklistLine(line, game))
+    .filter((p): p is ParsedLine => p !== null));
 
   let fetchedCards: any[] = [];
 
@@ -130,15 +214,7 @@ export async function fetchCardDataStandalone(listOfCards: string, game: string)
     str.replace(/[!"#$%&'()*+,.\/:;<=>?@[\\\]^`{|}~]/g, "\\$&");
 
   if (game === "MTG") {
-    const query = parsedList
-      .map(({ name }) => {
-        const searchName = name.includes(" // ") ? name.split(" // ")[0] : name;
-        return `!"${escapeSpecialChars(searchName)}"`;
-      })
-      .join(" OR ");
-    const res = await fetch(`https://api.scryfall.com/cards/search?q=${encodeURIComponent(query)}`);
-    const data = await res.json();
-    fetchedCards = data.data ?? [];
+    fetchedCards = await fetchMTGCards(parsedList, escapeSpecialChars);
   } else if (game === "YGO") {
     const res = await fetch("https://db.ygoprodeck.com/api/v7/cardinfo.php?num=20000&offset=0");
     const data = await res.json();
@@ -148,9 +224,14 @@ export async function fetchCardDataStandalone(listOfCards: string, game: string)
     fetchedCards = await res.json();
   }
 
-  const deckCards: Card[] = parsedList.map(({ name, quantity }, idx) => {
+  const deckCards: Card[] = parsedList.map(({ name, quantity, setCode, collectorNumber }, idx) => {
     const inputName = (name && name.toLowerCase().split(" // ")[0].trim()) || "";
-    const matched = fetchedCards.filter(card => {
+    const matched = fetchedCards.filter((card: any) => {
+      // If we have set+collector number, match on those for precision
+      if (game === "MTG" && setCode && collectorNumber) {
+        return card.set?.toUpperCase() === setCode &&
+               card.collector_number === collectorNumber;
+      }
       let cardName = "";
       if (game === "MTG") cardName = card.card_faces?.[0]?.name?.toLowerCase() || card.name.toLowerCase();
       else if (game === "YGO") cardName = card.name.toLowerCase();
@@ -229,6 +310,71 @@ export async function fetchCardDataStandalone(listOfCards: string, game: string)
   return deckCards;
 }
 
+// ── MTG fetch helper — handles set/collector number lookups ─────────────────
+
+async function fetchMTGCards(
+  parsedList: ParsedLine[],
+  escapeSpecialChars: (s: string) => string,
+): Promise<any[]> {
+  const bySetNumber = parsedList.filter(p => p.setCode && p.collectorNumber);
+  const byName      = parsedList.filter(p => !(p.setCode && p.collectorNumber));
+
+  const results: any[] = [];
+
+  // Fetch by set+collector number using Scryfall's /cards/:set/:number endpoint
+  await Promise.all(bySetNumber.map(async p => {
+    try {
+      const res  = await fetch(`https://api.scryfall.com/cards/${p.setCode!.toLowerCase()}/${p.collectorNumber}`);
+      const data = await res.json();
+      if (data.object === "error") return;
+
+      // Check if this printing is missing image URIs (tokens, art cards, some promos)
+      const hasImage = data.image_uris?.normal ||
+        (data.card_faces && data.card_faces.some((f: any) => f.image_uris?.normal));
+
+      if (!hasImage) {
+        // Fall back to name search to get a default printing's image
+        const searchName = (data.name || p.name).split(" // ")[0];
+        try {
+          const fallback = await fetch(
+            `https://api.scryfall.com/cards/named?exact=${encodeURIComponent(searchName)}`
+          );
+          const fallbackData = await fallback.json();
+          if (fallbackData.object !== "error") {
+            // Patch the specific printing's data with the fallback image
+            data.image_uris = fallbackData.image_uris;
+            if (data.card_faces && fallbackData.card_faces) {
+              data.card_faces = data.card_faces.map((face: any, i: number) => ({
+                ...face,
+                image_uris: face.image_uris || fallbackData.card_faces?.[i]?.image_uris,
+              }));
+            }
+          }
+        } catch { /* keep card without image rather than dropping it */ }
+      }
+
+      results.push(data);
+    } catch { /* silently skip */ }
+  }));
+
+  // Fetch by name using search API
+  if (byName.length > 0) {
+    const query = byName
+      .map(({ name }) => {
+        const searchName = name.includes(" // ") ? name.split(" // ")[0] : name;
+        return `!"${escapeSpecialChars(searchName)}"`;
+      })
+      .join(" OR ");
+    try {
+      const res  = await fetch(`https://api.scryfall.com/cards/search?q=${encodeURIComponent(query)}`);
+      const data = await res.json();
+      if (data.data) results.push(...data.data);
+    } catch { /* silently skip */ }
+  }
+
+  return results;
+}
+
 // ── Component ─────────────────────────────────────────────────────────────────
 
 class CardImporter extends Component<DeckListProps, DeckListState> {
@@ -245,6 +391,7 @@ class CardImporter extends Component<DeckListProps, DeckListState> {
       game: "MTG",
       deck_list: [],
       sampleDeckName: undefined,
+      failedCards: [],
     };
   }
 
@@ -255,16 +402,10 @@ class CardImporter extends Component<DeckListProps, DeckListState> {
   };
 
   fetchCardData = async (listOfCards: string, game: string) => {
-    const parsedList = listOfCards
+    const parsedList: ParsedLine[] = mergeDuplicates(listOfCards
       .split("\n")
-      .map(line => line.trim())
-      .filter(line => line.length > 0)
-      .map(line => {
-        const match = line.match(/^(\d+)x?\s+(.*)$/i);
-        return match
-          ? { quantity: match[1], name: match[2].trim() }
-          : { quantity: "1", name: line };
-      });
+      .map(line => parseDecklistLine(line, game))
+      .filter((p): p is ParsedLine => p !== null));
 
     let fetchedCards: any[] = [];
 
@@ -273,29 +414,26 @@ class CardImporter extends Component<DeckListProps, DeckListState> {
         str.replace(/[!"#$%&'()*+,.\/:;<=>?@[\\]^`{|}~]/g, "\\$&");
 
       if (game === "MTG") {
-        const query = parsedList
-          .map(({ name }) => {
-            const searchName = name.includes(" // ") ? name.split(" // ")[0] : name;
-            return `!"${escapeSpecialChars(searchName)}"`;
-          })
-          .join(" OR ");
-        const res = await fetch(`https://api.scryfall.com/cards/search?q=${encodeURIComponent(query)}`);
-        const data = await res.json();
-        fetchedCards = data.data;
+        fetchedCards = await fetchMTGCards(parsedList, escapeSpecialChars);
       } else if (game === "YGO") {
         const res = await fetch("https://db.ygoprodeck.com/api/v7/cardinfo.php?num=20000&offset=0");
         const data = await res.json();
-        fetchedCards = data.data;
+        fetchedCards = data.data ?? [];
       } else if (game === "LOR") {
-        const res = await fetch("https://api.lorcana-api.com/bulk/cards");
-        const data = await res.json();
-        fetchedCards = data;
+        const res_lor = await fetch("https://api.lorcana-api.com/bulk/cards");
+        const data_lor = await res_lor.json();
+        fetchedCards = data_lor;
       }
 
-      const deckCards: Card[] = parsedList.map(({ name, quantity }, idx) => {
+      const failedCards: string[] = [];
+      const deckCards: Card[] = parsedList.map(({ name, quantity, setCode, collectorNumber }, idx) => {
         const inputName = (name && name.toLowerCase().split(" // ")[0].trim()) || "";
 
-        const matched = fetchedCards.filter(card => {
+        const matched = fetchedCards.filter((card: any) => {
+          if (game === "MTG" && setCode && collectorNumber) {
+            return card.set?.toUpperCase() === setCode &&
+                   card.collector_number === collectorNumber;
+          }
           let cardName = "";
           if (game === "MTG") {
             cardName = card.card_faces?.[0]?.name?.toLowerCase() || card.name.toLowerCase();
@@ -306,7 +444,6 @@ class CardImporter extends Component<DeckListProps, DeckListState> {
           }
           return cardName === inputName;
         });
-
         const info: cardInfo[] = matched.flatMap(card => {
           if (game === "MTG") {
             if (card.card_faces && Array.isArray(card.card_faces)) {
@@ -395,6 +532,8 @@ class CardImporter extends Component<DeckListProps, DeckListState> {
           isFlip  = layout === "flip";
         }
 
+        if (matched.length === 0) failedCards.push(name);
+
         return {
           cardname: info.length > 1
             ? `${info[0]?.name || "UNKNOWN"} // ${info[1]?.name || "UNKNOWN"}`
@@ -405,8 +544,10 @@ class CardImporter extends Component<DeckListProps, DeckListState> {
         };
       });
 
-      this.setState({ deck_list: deckCards });
-      this.props.onDeckUpdate(deckCards, game, listOfCards);
+      // Filter out cards that returned no data
+      const validDeckCards = deckCards.filter(c => c.info.length > 0);
+      this.setState({ deck_list: validDeckCards, failedCards });
+      this.props.onDeckUpdate(validDeckCards, game, listOfCards);
     } catch (error) {
       console.error("Failed to fetch cards:", error);
     }
@@ -425,7 +566,7 @@ class CardImporter extends Component<DeckListProps, DeckListState> {
   };
 
   render() {
-    const { list_of_cards, game, sampleDeckName } = this.state;
+    const { list_of_cards, game, sampleDeckName, failedCards } = this.state;
     const { saves, currentDecklistText, onSave, onLoad, onDelete, onExportSingle, onExportAll, onImport } = this.props;
 
     return (
@@ -474,6 +615,22 @@ class CardImporter extends Component<DeckListProps, DeckListState> {
             Import
           </button>
         </div>
+
+        {failedCards.length > 0 && (
+          <div style={{
+            marginTop: 8, padding: "8px 10px",
+            background: "#1a0a0a", border: "1px solid #663333", borderRadius: 4,
+          }}>
+            <div style={{ color: "#e55", fontSize: 10, marginBottom: 4, letterSpacing: "0.05em" }}>
+              {failedCards.length} card{failedCards.length > 1 ? "s" : ""} not found:
+            </div>
+            {failedCards.map(name => (
+              <div key={name} style={{ color: "#c77", fontSize: 10, paddingLeft: 4 }}>
+                · {name}
+              </div>
+            ))}
+          </div>
+        )}
 
         <SaveLoadPanel
           saves={saves}

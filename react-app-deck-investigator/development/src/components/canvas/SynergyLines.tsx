@@ -1,34 +1,45 @@
 import React from "react";
 import { Card } from "../data/CardImporter";
-import { SynergyConnection, SynergyDirection, SynergyCategory, SYNERGY_COLORS } from "../data/SynergyEngine";
+import { SynergyConnection, SynergyDirection } from "../data/SynergyEngine";
+import { labelToColor } from "./labelToColor";
 import { ManualConnection } from "../data/ManualConnection";
 import { Position } from "./ForceLayout";
 import { cardSize, offsetLine, shortenLine, cardEdgePoint } from "./canvasUtils";
 
 // ── Marker helpers ────────────────────────────────────────────────────────────
 
-function markerId(category: string, direction: "start" | "end") {
-  return "arrow-" + category + "-" + direction;
+function synergyMarkerId(label: string, direction: "start" | "end") {
+  return "arrow-syn-" + label.replace(/[^a-zA-Z0-9]/g, "_") + "-" + direction;
 }
 
 function manualMarkerId(id: string, direction: "start" | "end") {
   return "arrow-manual-" + id + "-" + direction;
 }
 
-function Defs({ manualConnections }: { manualConnections: ManualConnection[] }) {
-  const categories = Object.keys(SYNERGY_COLORS) as SynergyCategory[];
+function Defs({ synergyConnections, manualConnections }: { synergyConnections: SynergyConnection[], manualConnections: ManualConnection[] }) {
+  // Build unique labels from synergy connections, tracking solid state and color
+  const synergyLabelMap = new Map<string, { solid: boolean; color: string }>();
+  for (const c of synergyConnections) {
+    const resolved = c.color ?? labelToColor(c.label);
+    if (!synergyLabelMap.has(c.label)) synergyLabelMap.set(c.label, { solid: !!c.solid, color: resolved });
+    else if (c.solid) synergyLabelMap.get(c.label)!.solid = true;
+  }
   return (
     <defs>
-      {categories.flatMap(cat => {
-        const color = SYNERGY_COLORS[cat];
+      {Array.from(synergyLabelMap.entries()).flatMap(([label, { solid, color }]) => {
+        const id = label.replace(/[^a-zA-Z0-9]/g, "_");
+        // Hollow arrowhead = outlined triangle; solid = filled triangle
+        const arrowPath = solid
+          ? "M0,0 L0,6 L6,3 z"
+          : "M0,0 L0,6 L6,3 L0,0 z"; // same shape, fill controlled by fillOpacity
         return [
-          <marker key={cat + "-end"} id={markerId(cat, "end")}
+          <marker key={label + "-end"} id={"arrow-syn-" + id + "-end"}
             markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
-            <path d="M0,0 L0,6 L6,3 z" fill={color} opacity="0.9" />
+            <path d={arrowPath} fill={solid ? color : "none"} stroke={color} strokeWidth={solid ? 0 : 0.8} opacity="0.9" />
           </marker>,
-          <marker key={cat + "-start"} id={markerId(cat, "start")}
+          <marker key={label + "-start"} id={"arrow-syn-" + id + "-start"}
             markerWidth="6" markerHeight="6" refX="1" refY="3" orient="auto-start-reverse">
-            <path d="M0,0 L0,6 L6,3 z" fill={color} opacity="0.9" />
+            <path d={arrowPath} fill={solid ? color : "none"} stroke={color} strokeWidth={solid ? 0 : 0.8} opacity="0.9" />
           </marker>,
         ];
       })}
@@ -71,19 +82,19 @@ function buildStripes(
     let markerStart: string | undefined;
     let markerEnd:   string | undefined;
     if (direction === "forward") {
-      if (!isFlipped) markerEnd   = "url(#" + markerId(conn.category, "end") + ")";
-      else            markerStart = "url(#" + markerId(conn.category, "start") + ")";
+      if (!isFlipped) markerEnd   = "url(#" + synergyMarkerId(conn.label, "end") + ")";
+      else            markerStart = "url(#" + synergyMarkerId(conn.label, "start") + ")";
     } else if (direction === "bidirectional") {
-      markerStart = "url(#" + markerId(conn.category, "start") + ")";
-      markerEnd   = "url(#" + markerId(conn.category, "end") + ")";
+      markerStart = "url(#" + synergyMarkerId(conn.label, "start") + ")";
+      markerEnd   = "url(#" + synergyMarkerId(conn.label, "end") + ")";
     }
 
     return (
       <line key={"stripe-" + pairKey + "-" + i}
         x1={x1} y1={y1} x2={x2} y2={y2}
-        stroke={SYNERGY_COLORS[conn.category]}
+        stroke={conn.color ?? labelToColor(conn.label)}
         strokeWidth={isHighlighted ? 3 : 1.5}
-        strokeDasharray={direction === "none" ? "none" : "6 4"}
+        strokeDasharray={conn.solid ? "none" : (direction === "none" ? "none" : "6 4")}
         opacity={isDimmed ? 0.1 : isHighlighted ? 1 : 0.6}
         markerEnd={markerEnd} markerStart={markerStart}
         style={{ pointerEvents: "none" }} />
@@ -91,7 +102,101 @@ function buildStripes(
   });
 }
 
-// ── Types ─────────────────────────────────────────────────────────────────────
+// ── Label with background rect ────────────────────────────────────────────────
+
+// ── Label overlap separation ──────────────────────────────────────────────────
+// Estimates label bounding boxes and runs a repulsion pass to spread overlaps.
+
+const LABEL_FONT   = 12;
+const LABEL_PAD_X  = 6;
+const LABEL_PAD_Y  = 3;
+
+function labelSize(label: string): { w: number; h: number } {
+  return {
+    w: label.length * LABEL_FONT * 0.55 + LABEL_PAD_X * 2,
+    h: LABEL_FONT + LABEL_PAD_Y * 2,
+  };
+}
+
+function separateLabels(
+  labels: { label: string; x: number; y: number; color: string }[],
+  iterations = 30,
+): { label: string; x: number; y: number; color: string }[] {
+  // Work on a mutable copy
+  const pos = labels.map(l => ({ ...l }));
+
+  for (let iter = 0; iter < iterations; iter++) {
+    let moved = false;
+    for (let i = 0; i < pos.length; i++) {
+      for (let j = i + 1; j < pos.length; j++) {
+        const a = pos[i], b = pos[j];
+        const sa = labelSize(a.label), sb = labelSize(b.label);
+        const minDx = (sa.w + sb.w) / 2 + 4;  // 4px gutter
+        const minDy = (sa.h + sb.h) / 2 + 2;
+        const dx = b.x - a.x;
+        const dy = b.y - a.y;
+        const overlapX = minDx - Math.abs(dx);
+        const overlapY = minDy - Math.abs(dy);
+        if (overlapX > 0 && overlapY > 0) {
+          // Push along the axis with less overlap to minimise movement
+          if (overlapX < overlapY) {
+            const push = overlapX / 2 + 0.5;
+            const dir  = dx >= 0 ? 1 : -1;
+            a.x -= push * dir;
+            b.x += push * dir;
+          } else {
+            const push = overlapY / 2 + 0.5;
+            const dir  = dy >= 0 ? 1 : -1;
+            a.y -= push * dir;
+            b.y += push * dir;
+          }
+          moved = true;
+        }
+      }
+    }
+    if (!moved) break;
+  }
+  return pos;
+}
+
+function renderLabelTag(
+  key: string,
+  label: string,
+  x: number,
+  y: number,
+  color: string,
+  highlighted: boolean,
+): React.ReactElement {
+  const fontSize  = 12;
+  const padX      = 6;
+  const padY      = 3;
+  const approxW   = label.length * fontSize * 0.55 + padX * 2;
+  const rectH     = fontSize + padY * 2;
+  return (
+    <g key={key} style={{ pointerEvents: "none" }}>
+      <rect
+        x={x - approxW / 2} y={y - rectH + padY}
+        width={approxW} height={rectH}
+        rx={3} ry={3}
+        fill={color}
+        fillOpacity={highlighted ? 0.35 : 0.18}
+        stroke={color}
+        strokeOpacity={highlighted ? 0.9 : 0.5}
+        strokeWidth={1}
+      />
+      <text
+        x={x} y={y}
+        fill="white" fontSize={fontSize} textAnchor="middle"
+        dominantBaseline="auto"
+        style={{ pointerEvents: "none" }}
+      >
+        {label}
+      </text>
+    </g>
+  );
+}
+
+
 
 export type ActiveHighlight =
   | { mode: "card"; cardName: string }
@@ -110,6 +215,8 @@ interface SynergyLinesProps {
   ctrlMode: boolean;
   selectedLineId: string | null;
   onLineClick: (conn: ManualConnection) => void;
+  alwaysShowLabels: boolean;
+  disabledCards: Set<string>;
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -179,10 +286,20 @@ const SynergyLines: React.FC<SynergyLinesProps> = ({
   ctrlMode,
   selectedLineId,
   onLineClick,
+  alwaysShowLabels,
+  disabledCards,
 }) => {
   const cardMap = new Map(cards.map(c => [c.cardname, c]));
   const pairMap = buildPairMap(synergyConnections, hiddenLabels);
-  const visibleManual = manualConnections.filter(c => !hiddenLabels.has(c.label) && !c.highlightOnly);
+  // Remove pairs involving disabled cards
+  for (const key of Array.from(pairMap.keys())) {
+    const [a, b] = key.split("|");
+    if (disabledCards.has(a) || disabledCards.has(b)) pairMap.delete(key);
+  }
+  const visibleManual = manualConnections.filter(c =>
+    !hiddenLabels.has(c.label) && !c.highlightOnly &&
+    !disabledCards.has(c.from) && !disabledCards.has(c.to)
+  );
 
   const isHighlightOnlyActive =
     activeHighlight?.mode === "label" &&
@@ -319,12 +436,58 @@ const SynergyLines: React.FC<SynergyLinesProps> = ({
     if (activeHighlight.mode === "label" && mids.length > 0) {
       const avgX = mids.reduce((s, p) => s + p.x, 0) / mids.length;
       const avgY = mids.reduce((s, p) => s + p.y, 0) / mids.length;
+      const color = labelToColor(activeHighlight.label);
       highlightedLines.push(
-        <text key="label" x={avgX} y={avgY - 8}
-          fill="white" fontSize="11" textAnchor="middle"
-          style={{ pointerEvents: "none", filter: "drop-shadow(0px 0px 4px black)" }}>
-          {activeHighlight.label}
-        </text>
+        renderLabelTag("label-hover", activeHighlight.label, avgX, avgY - 8, color, true)
+      );
+    }
+  }
+
+  // ── Always-visible labels ──────────────────────────────────────────────────
+
+  const alwaysLabels: React.ReactElement[] = [];
+  if (alwaysShowLabels) {
+    // Synergy labels — one label per unique label, at avg midpoint of all its pairs
+    const labelMids = new Map<string, { xs: number[]; ys: number[]; color: string }>();
+    for (const [pairKey, conns] of pairMap.entries()) {
+      const [nameA, nameB] = pairKey.split("|");
+      const cardA = cardMap.get(nameA), cardB = cardMap.get(nameB);
+      if (!cardA || !cardB) continue;
+      const cA = getCardCenter(cardA, positionMap);
+      const cB = getCardCenter(cardB, positionMap);
+      const mx = (cA.x + cB.x) / 2, my = (cA.y + cB.y) / 2;
+      for (const conn of conns) {
+        if (!labelMids.has(conn.label)) labelMids.set(conn.label, { xs: [], ys: [], color: conn.color ?? labelToColor(conn.label) });
+        labelMids.get(conn.label)!.xs.push(mx);
+        labelMids.get(conn.label)!.ys.push(my);
+      }
+    }
+    // Manual labels
+    for (const conn of visibleManual) {
+      const cardA = cardMap.get(conn.from), cardB = cardMap.get(conn.to);
+      if (!cardA || !cardB) continue;
+      const cA = getCardCenter(cardA, positionMap);
+      const cB = getCardCenter(cardB, positionMap);
+      const mx = (cA.x + cB.x) / 2, my = (cA.y + cB.y) / 2;
+      if (!labelMids.has(conn.label)) labelMids.set(conn.label, { xs: [], ys: [], color: conn.color });
+      labelMids.get(conn.label)!.xs.push(mx);
+      labelMids.get(conn.label)!.ys.push(my);
+    }
+
+    const rawLabelPositions: { label: string; x: number; y: number; color: string }[] = [];
+
+    for (const [label, { xs, ys, color }] of labelMids.entries()) {
+      const avgX = xs.reduce((s, v) => s + v, 0) / xs.length;
+      const avgY = ys.reduce((s, v) => s + v, 0) / ys.length;
+      const isHovered = activeHighlight?.mode === "label" && activeHighlight.label === label;
+      if (!isHovered) rawLabelPositions.push({ label, x: avgX, y: avgY - 8, color });
+    }
+
+    const separatedPositions = separateLabels(rawLabelPositions);
+
+    for (const { label, x, y, color } of separatedPositions) {
+      alwaysLabels.push(
+        renderLabelTag("always-" + label, label, x, y, color, false)
       );
     }
   }
@@ -337,7 +500,7 @@ const SynergyLines: React.FC<SynergyLinesProps> = ({
         width: "100%", height: "100%", overflow: "visible",
         pointerEvents: ctrlMode ? "all" : "none",
       }}>
-        <Defs manualConnections={manualConnections} />
+        <Defs synergyConnections={synergyConnections} manualConnections={manualConnections} />
         {normalLines}
         {manualLines}
         {selRect}
@@ -349,6 +512,7 @@ const SynergyLines: React.FC<SynergyLinesProps> = ({
         pointerEvents: "none",
       }}>
         {highlightedLines}
+        {alwaysLabels}
       </svg>
     </>
   );

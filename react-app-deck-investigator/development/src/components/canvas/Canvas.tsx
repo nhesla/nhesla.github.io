@@ -21,6 +21,9 @@ import Legend from "./Legend";
 import ConnectionModal from "./ConnectionModal";
 import { ConnectionModalMode } from "./ConnectionModal";
 import { canvasWidth, canvasHeight, LEGEND_MARGIN, getPos } from "./canvasUtils";
+import { CanvasEllipse, createEllipse, getEllipseMembers } from "./CanvasEllipse";
+import EllipseLayer from "./EllipseLayer";
+import { labelToColor } from "./labelToColor";
 
 interface CanvasProps {
   cards: Card[] | null;
@@ -29,17 +32,23 @@ interface CanvasProps {
   manualConnections: ManualConnection[];
   onPositionMapChange: (map: Record<string, Position>) => void;
   onManualConnectionsChange: (conns: ManualConnection[]) => void;
+  onSynergyConnectionsChange: (conns: SynergyConnection[]) => void;
+  ellipses: CanvasEllipse[];
+  onEllipsesChange: (ellipses: CanvasEllipse[]) => void;
+  disabledCards: Set<string>;
+  onToggleDisabled: (cardname: string) => void;
   onClickCard: (card: Card) => void;
   onMouseOver: (card: Card) => void;
   onMouseLeave: () => void;
 }
 
 type PendingConnection =
-  | { mode: "single";           from: string; to: string }
-  | { mode: "multi";            from: string; targets: string[] }
-  | { mode: "group";            targets: string[] }
-  | { mode: "edit-label";       label: string }
-  | { mode: "edit-connection";  connection: ManualConnection };
+  | { mode: "single";              from: string; to: string }
+  | { mode: "multi";               from: string; targets: string[] }
+  | { mode: "group";               targets: string[] }
+  | { mode: "edit-label";          label: string }
+  | { mode: "edit-connection";     connection: ManualConnection }
+  | { mode: "edit-synergy-label";  label: string };
 
 type ActiveHighlight =
   | { mode: "card";  cardName: string }
@@ -53,6 +62,11 @@ const Canvas: React.FC<CanvasProps> = ({
   manualConnections,
   onPositionMapChange,
   onManualConnectionsChange,
+  onSynergyConnectionsChange,
+  ellipses,
+  onEllipsesChange,
+  disabledCards,
+  onToggleDisabled,
   onClickCard,
   onMouseOver,
   onMouseLeave,
@@ -100,6 +114,7 @@ const Canvas: React.FC<CanvasProps> = ({
       if (e.key === "Escape") {
         setEditingLabel(null);
         setSelectedLineId(null);
+        setSelectedEllipseId(null);
         setPendingConnection(null);
         setHighlightedCard(null);
       }
@@ -108,6 +123,7 @@ const Canvas: React.FC<CanvasProps> = ({
       if (e.key === "Control") {
         setCtrlMode(false);
         setSelectedLineId(null);
+        setSelectedEllipseId(null);
       }
     };
     window.addEventListener("keydown", onKeyDown);
@@ -199,6 +215,10 @@ const Canvas: React.FC<CanvasProps> = ({
     setEditingLabel(label);
   };
 
+  const handleEditSynergyLabel = (label: string) => {
+    setPendingConnection({ mode: "edit-synergy-label", label });
+  };
+
   // ── Modal confirm ───────────────────────────────────────────────────────────
 
   const handleModalConfirm = (
@@ -239,6 +259,12 @@ const Canvas: React.FC<CanvasProps> = ({
         updateConnectionById(manualConnections, pendingConnection.connection.id, { label, color, direction, highlightOnly })
       );
       setSelectedLineId(null);
+
+    } else if (pendingConnection.mode === "edit-synergy-label") {
+      const oldLabel = pendingConnection.label;
+      onSynergyConnectionsChange(synergyConnections.map(c =>
+        c.label === oldLabel ? { ...c, label, color, solid: !highlightOnly } : c
+      ));
     }
 
     setPendingConnection(null);
@@ -255,6 +281,9 @@ const Canvas: React.FC<CanvasProps> = ({
     } else if (pendingConnection.mode === "edit-connection") {
       onManualConnectionsChange(removeConnectionById(manualConnections, pendingConnection.connection.id));
       setSelectedLineId(null);
+    } else if (pendingConnection.mode === "edit-synergy-label") {
+      // Delete all synergy connections with this label
+      onSynergyConnectionsChange(synergyConnections.filter(c => c.label !== pendingConnection.label));
     }
     setPendingConnection(null);
   };
@@ -271,6 +300,10 @@ const Canvas: React.FC<CanvasProps> = ({
 
   const [hiddenLabels,       setHiddenLabels]       = useState<Set<string>>(new Set());
   const [legendHoveredLabel, setLegendHoveredLabel] = useState<string | null>(null);
+  const [alwaysShowLabels,   setAlwaysShowLabels]   = useState(true);
+  const [selectedEllipseId,  setSelectedEllipseId]  = useState<string | null>(null);
+  const [hoveredEllipseId,   setHoveredEllipseId]   = useState<string | null>(null);
+  const [hiddenEllipses,     setHiddenEllipses]     = useState<Set<string>>(new Set());
 
   const toggleLabel = (label: string) => {
     setHiddenLabels(prev => {
@@ -307,6 +340,15 @@ const Canvas: React.FC<CanvasProps> = ({
   // ── Glow color for highlight-only labels ────────────────────────────────────
 
   const getGlowColor = (cardname: string): string | undefined => {
+    // Ellipse legend hover — glow cards inside the hovered ellipse
+    if (hoveredEllipseId) {
+      const ellipse = ellipses.find(e => e.id === hoveredEllipseId);
+      if (ellipse) {
+        const members = getEllipseMembers(ellipse, cards ?? [], positionMap);
+        if (members.includes(cardname)) return ellipse.color;
+      }
+    }
+
     const active = getActiveHighlight();
     if (!active || active.mode !== "label") {
       // Also glow if this card is in the currently-editing label group
@@ -331,6 +373,27 @@ const Canvas: React.FC<CanvasProps> = ({
     if (manualMatch) return manualMatch.color;
 
     return undefined;
+  };
+
+  // ── Flag dots for card corners ─────────────────────────────────────────────
+
+  const getCardFlags = (cardname: string): { color: string; label: string; solid?: boolean }[] => {
+    const seen = new Map<string, { color: string; solid?: boolean }>(); // label -> {color, solid}
+
+    for (const conn of synergyConnections) {
+      if (conn.highlightOnly && (conn.from === cardname || conn.to === cardname)) {
+        if (!seen.has(conn.label))
+          seen.set(conn.label, { color: conn.color ?? labelToColor(conn.label), solid: conn.solid });
+      }
+    }
+    for (const conn of manualConnections) {
+      if (conn.highlightOnly && (conn.from === cardname || conn.to === cardname)) {
+        if (!seen.has(conn.label))
+          seen.set(conn.label, { color: conn.color, solid: true }); // manual = always solid
+      }
+    }
+
+    return Array.from(seen.entries()).map(([label, { color, solid }]) => ({ label, color, solid }));
   };
 
   // ── Modal props helper ──────────────────────────────────────────────────────
@@ -358,11 +421,63 @@ const Canvas: React.FC<CanvasProps> = ({
           editingConnection: manualConnections.find(c => c.label === pendingConnection.label),
           onDelete: handleModalDelete };
 
+      case "edit-synergy-label": {
+        const syns = synergyConnections.filter(c => c.label === pendingConnection.label);
+        const isSolid = syns.some(c => c.solid);
+        const storedColor = syns[0]?.color ?? labelToColor(pendingConnection.label);
+        return { ...base, mode: "edit-label" as ConnectionModalMode,
+          editingLabel: pendingConnection.label,
+          editingConnection: syns.length > 0 ? {
+            id: "", from: "", to: "",
+            label: pendingConnection.label,
+            color: storedColor,
+            direction: syns[0].direction ?? "bidirectional",
+            highlightOnly: !isSolid,
+          } : undefined,
+          onDelete: handleModalDelete };
+      }
+
       case "edit-connection":
         return { ...base, mode: "edit-connection" as ConnectionModalMode,
           editingConnection: pendingConnection.connection,
           onDelete: handleModalDelete };
+
+      default: {
+        // ellipse mode — stored as `any` since it's not in the PendingConnection union
+        const pc = pendingConnection as any;
+        if (pc.mode === "ellipse") {
+          return {
+            mode: "ellipse" as ConnectionModalMode,
+            editingLabel: pc.label,
+            onConfirm: (label: string, color: string) => {
+              onEllipsesChange(ellipses.map(el =>
+                el.id === pc.ellipseId ? { ...el, label, color } : el
+              ));
+              setPendingConnection(null);
+            },
+            onDelete: () => {
+              onEllipsesChange(ellipses.filter(el => el.id !== pc.ellipseId));
+              setSelectedEllipseId(null);
+              setPendingConnection(null);
+            },
+            onCancel: () => setPendingConnection(null),
+          };
+        }
+        return null;
+      }
     }
+  };
+
+  // ── Ellipse right-click → modal ─────────────────────────────────────────────
+
+  const handleEllipseRightClick = (ellipse: CanvasEllipse, e: React.MouseEvent) => {
+    setSelectedEllipseId(ellipse.id);
+    setPendingConnection({
+      mode: "ellipse" as any,
+      ellipseId: ellipse.id,
+      label: ellipse.label,
+      color: ellipse.color,
+    } as any);
   };
 
   const modalProps = getModalProps();
@@ -381,9 +496,32 @@ const Canvas: React.FC<CanvasProps> = ({
         >
           ↺ Re-layout
         </button>
+        <button
+          onClick={() => setAlwaysShowLabels(v => !v)}
+          style={{
+            padding: "4px 12px", fontSize: "12px", cursor: "pointer",
+            background: alwaysShowLabels ? "#334" : "none",
+            border: alwaysShowLabels ? "1px solid #88aaff" : "1px solid #558",
+            color: alwaysShowLabels ? "#88aaff" : "#aaa",
+          }}
+        >
+          ⌗ Labels
+        </button>
+        <button
+          onClick={() => {
+            const e = createEllipse(canvasWidth / 2, canvasHeight / 2);
+            onEllipsesChange([...ellipses, e]);
+          }}
+          style={{
+            padding: "4px 12px", fontSize: "12px", cursor: "pointer",
+            background: "none", border: "1px solid #558", color: "#aaa",
+          }}
+        >
+          ⬭ Add Region
+        </button>
         {ctrlMode && (
           <span style={{ color: "#88aaff", fontSize: "11px" }}>
-            Ctrl: click a line to edit it
+            Ctrl: click a line or region to edit
           </span>
         )}
         {editingLabel && !ctrlMode && (
@@ -416,6 +554,17 @@ const Canvas: React.FC<CanvasProps> = ({
         onMouseUp={handleCanvasMouseUp}
         onMouseLeave={handleCanvasMouseUp}
       >
+        <EllipseLayer
+          ellipses={ellipses.filter(e => !hiddenEllipses.has(e.id))}
+          ctrlMode={ctrlMode}
+          selectedId={selectedEllipseId}
+          hoveredLegendId={hoveredEllipseId}
+          onSelect={setSelectedEllipseId}
+          onChange={(updated) => onEllipsesChange(ellipses.map(el => el.id === updated.id ? updated : el))}
+          onRightClick={handleEllipseRightClick}
+          width={canvasWidth}
+          height={canvasHeight}
+        />
         <SynergyLines
           cards={cards ?? []}
           positionMap={positionMap}
@@ -427,6 +576,8 @@ const Canvas: React.FC<CanvasProps> = ({
           ctrlMode={ctrlMode}
           selectedLineId={selectedLineId}
           onLineClick={handleLineClick}
+          alwaysShowLabels={alwaysShowLabels}
+          disabledCards={disabledCards}
         />
 
         {cards?.map((card, idx) => {
@@ -473,6 +624,8 @@ const Canvas: React.FC<CanvasProps> = ({
               isSelected={isSelected}
               isGroupDragging={isGroupDragging}
               glowColor={getGlowColor(card.cardname)}
+              flags={getCardFlags(card.cardname)}
+              isDisabled={disabledCards.has(card.cardname)}
               passthroughPointer={ctrlMode}
               onMouseEnter={cardMouseEnter}
               onMouseLeave={cardMouseLeave}
@@ -497,12 +650,97 @@ const Canvas: React.FC<CanvasProps> = ({
           onLabelHover={setLegendHoveredLabel}
           onTagSelection={handleTagSelection}
           onEditLabel={handleEditLabel}
+          onEditSynergyLabel={handleEditSynergyLabel}
+          onEllipseLegendHover={setHoveredEllipseId}
+          onEllipseRightClick={(id) => {
+            const el = ellipses.find(e => e.id === id);
+            if (el) handleEllipseRightClick(el, {} as React.MouseEvent);
+          }}
+          ellipses={ellipses}
+          hiddenEllipses={hiddenEllipses}
+          onToggleEllipse={(id) => setHiddenEllipses(prev => {
+            const next = new Set(prev);
+            next.has(id) ? next.delete(id) : next.add(id);
+            return next;
+          })}
         />
 
         {modalProps && <ConnectionModal {...modalProps} />}
       </div>
+
+      {/* ── Controls reference ── */}
+      <ControlsReference />
     </div>
   );
 };
 
 export default Canvas;
+
+// ── Controls reference ────────────────────────────────────────────────────────
+
+const CONTROLS = [
+  { input: "Left-click card",        action: "Open card details" },
+  { input: "Right-click card",       action: "Start connection from card" },
+  { input: "Left-click 2nd card",    action: "Complete connection" },
+  { input: "Shift+click card",       action: "Add/remove from selection" },
+  { input: "Click+drag canvas",      action: "Box-select multiple cards" },
+  { input: "Right-click selected",   action: "Connect one → many" },
+  { input: "Hold Ctrl",              action: "Line/region select mode" },
+  { input: "Ctrl + click ellipse",   action: "Select region to move/resize/rotate" },
+  { input: "Ctrl + right-click ellipse", action: "Edit region label & color" },
+  { input: "Right-click legend row", action: "Edit all connections in group" },
+  { input: "Escape",                 action: "Cancel / deselect" },
+  { input: "F",                      action: "Flip card face (details panel)" },
+];
+
+const ControlsReference: React.FC = () => {
+  const [collapsed, setCollapsed] = React.useState(true);
+
+  return (
+    <div style={{
+      width: "calc(100% - 40px)",
+      margin: "0 20px 12px",
+      background: "rgba(0,0,0,0.6)",
+      border: "1px solid #333",
+      borderRadius: 6,
+      fontSize: 11,
+      userSelect: "none",
+    }}>
+      <div
+        onClick={() => setCollapsed(c => !c)}
+        style={{
+          display: "flex", justifyContent: "space-between", alignItems: "center",
+          padding: "5px 10px", cursor: "pointer", color: "#666",
+        }}
+      >
+        <span style={{ letterSpacing: "0.05em" }}>CONTROLS</span>
+        <span>{collapsed ? "▼" : "▲"}</span>
+      </div>
+
+      {!collapsed && (
+        <div style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
+          gap: "2px 16px",
+          padding: "6px 10px 10px",
+          borderTop: "1px solid #2a2a2a",
+        }}>
+          {CONTROLS.map(({ input, action }) => (
+            <div key={input} style={{ display: "flex", gap: 8, alignItems: "baseline", padding: "2px 0" }}>
+              <span style={{
+                color: "#888", whiteSpace: "nowrap", flexShrink: 0,
+                fontFamily: "monospace", fontSize: 10,
+                background: "#1a1a1a", border: "1px solid #333",
+                borderRadius: 3, padding: "1px 5px",
+              }}>
+                {input}
+              </span>
+              <span style={{ color: "#555" }}>—</span>
+              <span style={{ color: "#666" }}>{action}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};

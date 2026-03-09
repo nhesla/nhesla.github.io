@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { SynergyDirection } from "../data/SynergyEngine";
 import { ManualConnection, MANUAL_COLOR_PRESETS, MANUAL_CONNECTION_DEFAULTS } from "../data/ManualConnection";
 
@@ -9,7 +9,8 @@ export type ConnectionModalMode =
   | "multi"            // one card → many selected cards (new)
   | "group"            // all selected cards → mesh (new)
   | "edit-label"       // editing all connections sharing a label
-  | "edit-connection"; // editing one specific connection
+  | "edit-connection"  // editing one specific connection
+  | "ellipse";         // editing a canvas ellipse region
 
 interface ConnectionModalProps {
   mode: ConnectionModalMode;
@@ -55,6 +56,30 @@ const ConnectionModal: React.FC<ConnectionModalProps> = ({
   const [customHex,    setCustomHex]    = useState("");
   const [direction,    setDirection]    = useState<SynergyDirection>(initial.direction);
   const [highlightOnly, setHighlightOnly] = useState(initial.highlightOnly);
+
+  // ── Drag to move ──────────────────────────────────────────────────────────
+  const [pos,     setPos]     = useState<{ x: number; y: number } | null>(null);
+  const dragStart = useRef<{ mx: number; my: number; px: number; py: number } | null>(null);
+
+  const handleTitleMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault();
+    const rect = (e.currentTarget.parentElement as HTMLElement).getBoundingClientRect();
+    dragStart.current = { mx: e.clientX, my: e.clientY, px: rect.left, py: rect.top };
+    const onMove = (ev: MouseEvent) => {
+      if (!dragStart.current) return;
+      setPos({
+        x: dragStart.current.px + ev.clientX - dragStart.current.mx,
+        y: dragStart.current.py + ev.clientY - dragStart.current.my,
+      });
+    };
+    const onUp = () => {
+      dragStart.current = null;
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+    };
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+  };
 
   const isEditMode = mode === "edit-label" || mode === "edit-connection";
 
@@ -128,6 +153,7 @@ const ConnectionModal: React.FC<ConnectionModalProps> = ({
       case "group":        return "TAG SELECTION";
       case "edit-label":   return "EDIT GROUP";
       case "edit-connection": return "EDIT CONNECTION";
+      case "ellipse":      return "EDIT REGION";
       default:             return "NEW CONNECTION";
     }
   };
@@ -138,15 +164,16 @@ const ConnectionModal: React.FC<ConnectionModalProps> = ({
     switch (mode) {
       case "group":           return "Tag";
       case "edit-label":
-      case "edit-connection": return "Save";
+      case "edit-connection":
+      case "ellipse":         return "Save";
       default:                return "Add";
     }
   };
 
   return (
     <div style={{
-      position: "absolute",
-      bottom: 16, right: 16,
+      position: "fixed",
+      ...(pos ? { left: pos.x, top: pos.y } : { bottom: 16, right: 16 }),
       width: 240,
       background: "#1a1a2e",
       border: "1px solid #556",
@@ -158,8 +185,16 @@ const ConnectionModal: React.FC<ConnectionModalProps> = ({
       fontSize: 12,
     }}>
 
-      {/* Title */}
-      <div style={{ marginBottom: 8, color: "#aaa", fontSize: 11, letterSpacing: "0.05em" }}>
+      {/* Title — drag handle */}
+      <div
+        onMouseDown={handleTitleMouseDown}
+        style={{
+          marginBottom: 8, color: "#aaa", fontSize: 11, letterSpacing: "0.05em",
+          cursor: "grab", display: "flex", alignItems: "center", gap: 6,
+          userSelect: "none",
+        }}
+      >
+        <span style={{ color: "#444", fontSize: 10 }}>⠿</span>
         {title()}
       </div>
       {renderHeader()}
@@ -178,8 +213,8 @@ const ConnectionModal: React.FC<ConnectionModalProps> = ({
         />
       </div>
 
-      {/* Direction — hidden when highlight-only */}
-      {!highlightOnly && (
+      {/* Direction — hidden when highlight-only or ellipse */}
+      {!highlightOnly && mode !== "ellipse" && (
         <div style={{ marginBottom: 10 }}>
           <div style={{ color: "#888", marginBottom: 4 }}>
             Direction
@@ -244,7 +279,7 @@ const ConnectionModal: React.FC<ConnectionModalProps> = ({
       </div>
 
       {/* Preview line */}
-      {!highlightOnly && (
+      {!highlightOnly && mode !== "ellipse" && (
         <div style={{ marginBottom: 10 }}>
           <svg width="100%" height="20" style={{ overflow: "visible" }}>
             <line
@@ -263,21 +298,23 @@ const ConnectionModal: React.FC<ConnectionModalProps> = ({
       )}
 
       {/* Highlight only toggle */}
-      <div style={{ marginBottom: 14, display: "flex", alignItems: "center", gap: 8 }}>
-        <input
-          type="checkbox"
-          id="highlight-only"
-          checked={highlightOnly}
-          onChange={e => setHighlightOnly(e.target.checked)}
-          style={{ cursor: "pointer" }}
-        />
-        <label htmlFor="highlight-only" style={{ color: "#888", fontSize: 11, cursor: "pointer" }}>
-          Highlight only (no visible line)
-        </label>
-      </div>
+      {mode !== "ellipse" && (
+        <div style={{ marginBottom: 14, display: "flex", alignItems: "center", gap: 8 }}>
+          <input
+            type="checkbox"
+            id="highlight-only"
+            checked={highlightOnly}
+            onChange={e => setHighlightOnly(e.target.checked)}
+            style={{ cursor: "pointer" }}
+          />
+          <label htmlFor="highlight-only" style={{ color: "#888", fontSize: 11, cursor: "pointer" }}>
+            Highlight only (no visible line)
+          </label>
+        </div>
+      )}
 
       {/* Delete button — edit modes only */}
-      {isEditMode && onDelete && (
+      {(isEditMode || mode === "ellipse") && onDelete && (
         <button
           onClick={onDelete}
           style={{
@@ -287,7 +324,7 @@ const ConnectionModal: React.FC<ConnectionModalProps> = ({
             cursor: "pointer", fontSize: 12,
           }}
         >
-          {mode === "edit-label" ? "Delete all connections in group" : "Delete connection"}
+          {mode === "edit-label" ? "Delete all connections in group" : mode === "ellipse" ? "Delete region" : "Delete connection"}
         </button>
       )}
 

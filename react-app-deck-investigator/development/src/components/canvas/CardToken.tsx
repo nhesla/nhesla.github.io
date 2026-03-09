@@ -11,6 +11,8 @@ interface CardTokenProps {
   isSelected: boolean;
   isGroupDragging: boolean;
   glowColor?: string;       // set when a highlight-only label is hovered in legend
+  flags?: { color: string; label: string; solid?: boolean }[];  // role/label dots shown top-right
+  isDisabled?: boolean;         // when true, card renders at 50% opacity
   passthroughPointer?: boolean; // when true, pointer events are disabled (ctrl mode)
   onMouseEnter: () => void;
   onMouseLeave: () => void;
@@ -27,6 +29,8 @@ const CardToken: React.FC<CardTokenProps> = ({
   isSelected,
   isGroupDragging,
   glowColor,
+  flags = [],
+  isDisabled = false,
   passthroughPointer,
   onMouseEnter,
   onMouseLeave,
@@ -36,6 +40,37 @@ const CardToken: React.FC<CardTokenProps> = ({
   onPositionChange,
 }) => {
   if (!card.info || card.info.length === 0) return null;
+
+  // Flag dots — top-right above the card, opposite the quantity label
+  const MAX_FLAGS = 3;
+  const visibleFlags = flags.slice(0, MAX_FLAGS);
+  const overflow = flags.length - MAX_FLAGS;
+
+  const flagDots = flags.length > 0 ? (
+    <div style={{
+      position: "absolute",
+      top: -16,
+      right: 0,
+      display: "flex",
+      gap: 3,
+      alignItems: "center",
+      pointerEvents: "none",
+    }}>
+      {visibleFlags.map((f, i) => (
+          <div key={i} style={{
+            width: 8,
+            height: 8,
+            borderRadius: "50%",
+            background: f.solid !== true ? "none" : f.color,
+            border: f.solid !== true ? `2px solid ${f.color}` : "1px solid rgba(0,0,0,0.4)",
+            flexShrink: 0,
+          }} />
+        ))}
+      {overflow > 0 && (
+        <span style={{ color: "#aaa", fontSize: 9, lineHeight: 1 }}>+{overflow}</span>
+      )}
+    </div>
+  ) : null;
 
   // Quantity label sits above the card, outside the bordered image div
   const quantityLabel = (
@@ -95,9 +130,11 @@ const CardToken: React.FC<CardTokenProps> = ({
         width: cardSize.width,
         userSelect: "none",
         zIndex: 2,
+        opacity: isDisabled ? 0.5 : 1,
         pointerEvents: passthroughPointer ? "none" : "auto",
       }}>
         {quantityLabel}
+        {flagDots}
         <div
           style={getInnerStyle({})}
           onMouseDown={onMouseDown}
@@ -127,9 +164,11 @@ const CardToken: React.FC<CardTokenProps> = ({
         width: cardSize.width,
         userSelect: "none",
         zIndex: 2,
+        opacity: isDisabled ? 0.5 : 1,
         pointerEvents: passthroughPointer ? "none" : "auto",
       }}>
         {quantityLabel}
+        {flagDots}
         <div
           style={getInnerStyle({})}
           onClick={onClick}

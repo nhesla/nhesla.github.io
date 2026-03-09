@@ -8,17 +8,8 @@
 </head>
 <body>
 
-  <nav class="site-nav">
-    <a href="index.html" class="nav-home">nhesla</a>
-    <div class="nav-project-links">
-      <a href="TowerDefense/index.html"                class="nav-pill">Tower Defense</a>
-      <a href="phaser-tank-game/index.html"             class="nav-pill">Tank Game</a>
-      <a href="Vulcans_bad_suit_v1.i/index.html"       class="nav-pill">Vulcan's Suit</a>
-      <a href="grass-webgl-shader/index.html"          class="nav-pill">Grass Shader</a>
-      <a href="react-app-deck-investigator/index.html" class="nav-pill">Deck Investigator</a>
-    </div>
-    <a href="challenges/index.html" class="nav-challenges-link">&gt;_ Challenges</a>
-  </nav>
+  <div id="site-nav"></div>
+  <script src="assets/nav.js"></script>
 
   <div class="home-hero">
     <h1>Nikolas Hesla</h1>
@@ -115,6 +106,22 @@
         <span class="proj-card-arrow">View →</span>
       </a>
 
+      <a href="TaxDodgers_Godot/index.html" class="proj-card">
+        <div class="proj-card-top">
+          <div class="proj-icon" style="background:rgba(100,220,150,0.1)">🧾</div>
+          <div>
+            <h3>Tax Dodgers</h3>
+            <div class="tag-row" style="margin-bottom:0.4rem">
+              <span class="tag tag-green">Godot</span>
+              <span class="tag tag-green">GDScript</span>
+              <span class="tag tag-neutral">2 Player</span>
+            </div>
+          </div>
+        </div>
+        <p>Two-player party mini game — compete with a friend to avoid your civic duties for as long as possible.</p>
+        <span class="proj-card-arrow">Play →</span>
+      </a>
+
       <div class="proj-card" style="cursor:default">
         <div class="proj-card-top">
           <div class="proj-icon" style="background:rgba(255,150,100,0.1)">🎂</div>
@@ -146,7 +153,6 @@
       <a href="challenges/index.html" class="strip-link">View all →</a>
     </div>
     <div class="chal-grid">
-      <!-- Fill these in as you go -->
       <a href="challenges/two-sum.html" class="chal-card">
         <span class="diff-badge diff-easy">Easy</span>
         <div>

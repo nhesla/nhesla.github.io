@@ -1,5 +1,7 @@
 import React, { useState } from "react";
-import { SynergyConnection, SYNERGY_COLORS } from "../data/SynergyEngine";
+import { CanvasEllipse } from "./CanvasEllipse";
+import { SynergyConnection } from "../data/SynergyEngine";
+import { labelToColor } from "./labelToColor";
 import { ManualConnection } from "../data/ManualConnection";
 
 interface LegendProps {
@@ -15,6 +17,12 @@ interface LegendProps {
   onLabelHover: (label: string | null) => void;
   onTagSelection: () => void;
   onEditLabel: (label: string) => void;   // right-click on a manual label row
+  onEditSynergyLabel: (label: string) => void; // right-click on a synergy label row
+  ellipses: CanvasEllipse[];
+  hiddenEllipses: Set<string>;
+  onToggleEllipse: (id: string) => void;
+  onEllipseLegendHover: (id: string | null) => void;
+  onEllipseRightClick: (id: string) => void;
 }
 
 const Legend: React.FC<LegendProps> = ({
@@ -30,6 +38,12 @@ const Legend: React.FC<LegendProps> = ({
   onLabelHover,
   onTagSelection,
   onEditLabel,
+  onEditSynergyLabel,
+  ellipses,
+  hiddenEllipses,
+  onToggleEllipse,
+  onEllipseLegendHover,
+  onEllipseRightClick,
 }) => {
   const [collapsed, setCollapsed] = useState(false);
 
@@ -41,10 +55,10 @@ const Legend: React.FC<LegendProps> = ({
   for (const conn of synergyConnections) {
     if (conn.highlightOnly) {
       if (!synergyHighlightEntries.has(conn.label))
-        synergyHighlightEntries.set(conn.label, SYNERGY_COLORS[conn.category]);
+        synergyHighlightEntries.set(conn.label, conn.color ?? labelToColor(conn.label));
     } else {
       if (!synergyLineEntries.has(conn.label))
-        synergyLineEntries.set(conn.label, SYNERGY_COLORS[conn.category]);
+        synergyLineEntries.set(conn.label, conn.color ?? labelToColor(conn.label));
     }
   }
 
@@ -61,7 +75,8 @@ const Legend: React.FC<LegendProps> = ({
 
   const hasAnything =
     synergyLineEntries.size > 0 || synergyHighlightEntries.size > 0 ||
-    manualLineEntries.size > 0  || manualHighlightEntries.size > 0;
+    manualLineEntries.size > 0  || manualHighlightEntries.size > 0 ||
+    ellipses.length > 0;
 
   if (!hasAnything && selectedCardCount < 2 && !editingLabel) return null;
 
@@ -72,6 +87,8 @@ const Legend: React.FC<LegendProps> = ({
     color: string,
     isHighlightOnly: boolean,
     isManual: boolean,
+    isSynergy: boolean = false,
+    isSolid: boolean = true,
   ) => {
     const hidden    = hiddenLabels.has(label);
     const hovered   = legendHoveredLabel === label;
@@ -83,7 +100,7 @@ const Legend: React.FC<LegendProps> = ({
         style={{
           display: "flex", alignItems: "center", gap: "6px",
           marginBottom: "4px", opacity: hidden ? 0.3 : 1,
-          cursor: isManual ? "context-menu" : "pointer",
+          cursor: isManual || isSynergy ? "context-menu" : "pointer",
           background: isEditing ? "rgba(136,170,255,0.1)" : "none",
           borderRadius: 3,
           padding: "1px 2px",
@@ -96,19 +113,24 @@ const Legend: React.FC<LegendProps> = ({
         onContextMenu={e => {
           e.preventDefault();
           if (isManual) onEditLabel(label);
+          else if (isSynergy) onEditSynergyLabel(label);
         }}
       >
         {/* Swatch — line for regular, dot for highlight-only */}
         {isHighlightOnly ? (
           <div style={{
             width: 8, height: 8, flexShrink: 0, marginLeft: 6,
-            borderRadius: "50%", background: color,
+            borderRadius: "50%",
+            background: isSolid ? color : "none",
+            border: isSolid ? "none" : `2px solid ${color}`,
             boxShadow: hovered || isEditing ? "0 0 6px " + color : "none",
           }} />
         ) : (
           <div style={{
             width: 20, height: 3, flexShrink: 0,
-            background: color, borderRadius: 2,
+            background: isSolid ? color : "none",
+            border: isSolid ? "none" : `1px dashed ${color}`,
+            borderRadius: 2,
             boxShadow: hovered || isEditing ? "0 0 6px " + color : "none",
           }} />
         )}
@@ -120,8 +142,8 @@ const Legend: React.FC<LegendProps> = ({
           {label}
         </span>
 
-        {/* Edit hint for manual rows */}
-        {isManual && !hidden && (
+        {/* Edit hint for manual/synergy rows */}
+        {(isManual || isSynergy) && !hidden && (
           <span style={{ color: "#444", fontSize: "9px", flexShrink: 0 }}>✎</span>
         )}
 
@@ -158,18 +180,20 @@ const Legend: React.FC<LegendProps> = ({
   if (synergyLineEntries.size > 0) {
     if (sectionCount > 0) sections.push(renderDivider());
     sections.push(renderSectionLabel("DETECTED"));
-    synergyLineEntries.forEach((color, label) =>
-      sections.push(renderRow(label, color, false, false))
-    );
+    synergyLineEntries.forEach((color, label) => {
+      const isSolid = synergyConnections.some(c => c.label === label && c.solid);
+      sections.push(renderRow(label, color, false, false, true, isSolid));
+    });
     sectionCount++;
   }
 
   if (synergyHighlightEntries.size > 0) {
     if (sectionCount > 0) sections.push(renderDivider());
     sections.push(renderSectionLabel("ROLES"));
-    synergyHighlightEntries.forEach((color, label) =>
-      sections.push(renderRow(label, color, true, false))
-    );
+    synergyHighlightEntries.forEach((color, label) => {
+      const isSolid = synergyConnections.some(c => c.label === label && c.solid);
+      sections.push(renderRow(label, color, true, false, true, isSolid));
+    });
     sectionCount++;
   }
 
@@ -177,7 +201,7 @@ const Legend: React.FC<LegendProps> = ({
     if (sectionCount > 0) sections.push(renderDivider());
     sections.push(renderSectionLabel("MANUAL"));
     manualLineEntries.forEach((color, label) =>
-      sections.push(renderRow(label, color, false, true))
+      sections.push(renderRow(label, color, false, true, false, true))
     );
     sectionCount++;
   }
@@ -186,8 +210,50 @@ const Legend: React.FC<LegendProps> = ({
     if (sectionCount > 0) sections.push(renderDivider());
     sections.push(renderSectionLabel("GROUPS"));
     manualHighlightEntries.forEach((color, label) =>
-      sections.push(renderRow(label, color, true, true))
+      sections.push(renderRow(label, color, true, true, false, true))
     );
+    sectionCount++;
+  }
+
+  if (ellipses.length > 0) {
+    if (sectionCount > 0) sections.push(renderDivider());
+    sections.push(renderSectionLabel("REGIONS"));
+    ellipses.forEach(el => {
+      const hidden  = hiddenEllipses.has(el.id);
+      sections.push(
+        <div
+          key={el.id}
+          style={{
+            display: "flex", alignItems: "center", gap: "6px",
+            marginBottom: "4px", opacity: hidden ? 0.3 : 1,
+            cursor: "default",
+          }}
+          onMouseEnter={() => { if (!hidden) onEllipseLegendHover(el.id); }}
+          onMouseLeave={() => onEllipseLegendHover(null)}
+          onContextMenu={e => { e.preventDefault(); onEllipseRightClick(el.id); }}
+        >
+          {/* Ellipse swatch */}
+          <svg width={20} height={12} style={{ flexShrink: 0 }}>
+            <ellipse cx={10} cy={6} rx={9} ry={5}
+              fill={el.color} fillOpacity={0.2}
+              stroke={el.color} strokeOpacity={0.7} strokeWidth={1.5} />
+          </svg>
+          <span style={{ color: "#ccc", fontSize: "10px", flex: 1, lineHeight: 1.3 }}>
+            {el.label}
+          </span>
+          <button
+            onClick={() => onToggleEllipse(el.id)}
+            style={{
+              background: "none", border: "none", cursor: "pointer",
+              color: hidden ? "#555" : "#777", fontSize: "10px",
+              padding: "0 2px", lineHeight: 1, flexShrink: 0,
+            }}
+          >
+            {hidden ? "◯" : "●"}
+          </button>
+        </div>
+      );
+    });
     sectionCount++;
   }
 
