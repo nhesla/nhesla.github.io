@@ -5,13 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Tower Defense — nhesla</title>
   <link rel="stylesheet" href="../assets/style.css"/>
-  <script>
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("./coi-serviceworker.js", { scope: "./" }).then(() => {
-        if (!crossOriginIsolated) window.location.reload();
-      });
-    }
-  </script>
+  <script src="./coi-serviceworker.js"></script>
 </head>
 <body>
 
