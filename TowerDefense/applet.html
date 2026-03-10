@@ -1,23 +1,10 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8"/>
-  <script src="./coi-serviceworker.js"></script>
-  <style>
-    * { margin: 0; padding: 0; }
-    body { background: #000; overflow: hidden; }
-    #applet-container { width: 1024px; height: 700px; }
-  </style>
-</head>
-<body>
-  <div id="applet-container"></div>
-  <script src="https://cjrtnc.leaningtech.com/4.2/loader.js"></script>
-  <script>
-    (async () => {
-      await cheerpjInit({ version: 8 });
-      cheerpjCreateDisplay(1024, 700, document.getElementById('applet-container'));
-      await cheerpjRunJar("./TowerDefenseFinal.jar");
-    })();
-  </script>
-</body>
-</html>
+<script src="https://cjrtnc.leaningtech.com/4.2/loader.js"></script>
+<script>cheerpjInit({
+        version: 8 // ✅ This tells CheerpJ to use Java 8
+      });</script>
+
+<APPLET 
+    ARCHIVE="TowerDefenseFinal.jar" 
+    CODE="TowerDefenseFinal" 
+    WIDTH=1024 HEIGHT=700>
+</APPLET>
