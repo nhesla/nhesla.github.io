@@ -20,13 +20,13 @@ const PRESETS = {
         bladeCount: 2000, baseHeight: 1.6, heightVariance: 0.6, baseWidth: 0.09,
         hue: 175, brightness: 0.35, variance: 40, hueVariance: 20,
         windSpeed: 1.2, windIntensity: 0.12, windDirDeg: 180, patchiness: 0.4,
-        viewDistance: 2, lodScale: 1.0,
+        viewDistance: 3, lodScale: 1.0,
     },
     'Dense Fur': {
         bladeCount: 22500, baseHeight: 0.4, heightVariance: 0.5, baseWidth: 0.01,
         hue: 25, brightness: 0.20, variance: 20, hueVariance: 0,
         windSpeed: 1.5, windIntensity: 0.02, windDirDeg: 30, patchiness: 0,
-        viewDistance: 1, lodScale: 0.5,
+        viewDistance: 3, lodScale: 0.5,
     },
 };
 

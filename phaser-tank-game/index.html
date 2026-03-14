@@ -5,6 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Tank Game — nhesla</title>
   <link rel="stylesheet" href="../assets/style.css"/>
+  <style>
+    .embed-wrap iframe {
+      width: 640px;
+      height: 640px;
+      border: none;
+      display: block;
+    }
+  </style>
 </head>
 <body>
 
@@ -43,7 +51,7 @@
         <div class="note-block">
           <div class="note-label note-label-green">What went well</div>
           <div class="note-text">
-            <p>Write your notes here.</p>
+            <p>The asset pipeline came together nicely — I sourced tank sprites, environment tiles, and explosion sheets from separate places, modified them to fit, and got them feeling cohesive. The controls also ended up feeling pretty tight for a two-week project: WASD movement, mouse aim, and a jump mechanic that interacts with the procedurally generated terrain elevation.</p>
           </div>
         </div>
 
@@ -52,7 +60,7 @@
         <div class="note-block">
           <div class="note-label note-label-blue">What I learned</div>
           <div class="note-text">
-            <p>Write your notes here.</p>
+            <p>The most interesting technical piece was implementing a bitmask tileset for terrain generation. The idea is that each tile checks its neighbors and picks the correct sprite based on which sides are bordered — so terrain edges, corners, and open faces all render correctly without hardcoding every case. It's a clean pattern for this kind of problem and I'd use it again.</p>
           </div>
         </div>
 
@@ -61,10 +69,9 @@
         <div class="note-block">
           <div class="note-label note-label-red">Mistakes & what I'd do differently</div>
           <div class="note-text">
-            <p>Write your notes here.</p>
-            <!-- To add an image:
-            <img class="note-img" src="../assets/images/tank-game-screenshot.png" alt="description" />
-            -->
+            <p>The map generation works for the purposes of this project but doesn't incorporate any logic into terrain placement and would be unsuited for a larger game. I'd like to try wave function collapse next time, which would let me design actual tile rules and get maps that feel hand-crafted even when they're procedurally generated.</p>
+            <p>The static foliage sprites are also something I'd fix. Even a simple two or three frame animation on the grass and bushes would make the environment feel less like wallpaper.</p>
+            <p>The bigger issue is scope. One environment, one screen's worth of space, and enemies that only differ in color and health — it gets repetitive fast. Weapon pickups, a stomp kill animation, or even just some screenshake would have added a lot of personality for relatively little work. I'd also want multiple maps or at least a scrolling play area to give the game more room to breathe.</p>
           </div>
         </div>
 
@@ -73,11 +80,11 @@
   </div>
 
   <div id="other-projects"></div>
-  
-<script>
-  const gameFrame = document.querySelector('.embed-wrap iframe');
-  gameFrame.addEventListener('load', () => gameFrame.contentWindow.focus());
-  gameFrame.addEventListener('click', () => gameFrame.contentWindow.focus());
-</script>
+
+  <script>
+    const gameFrame = document.querySelector('.embed-wrap iframe');
+    gameFrame.addEventListener('load', () => gameFrame.contentWindow.focus());
+    gameFrame.addEventListener('click', () => gameFrame.contentWindow.focus());
+  </script>
 </body>
 </html>

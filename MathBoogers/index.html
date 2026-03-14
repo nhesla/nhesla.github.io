@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Math Boogers — nhesla</title>
+  <link rel="stylesheet" href="../assets/style.css"/>
+  <style>
+    .game-and-notes {
+      display: flex;
+      align-items: flex-start;
+      gap: 0;
+    }
+    .game-frame {
+      flex: 1;
+      min-width: 0;
+      border: 1px solid #2a2a2a;
+    }
+    .game-frame iframe {
+      width: 100%;
+      height: calc(100vh - 120px);
+      border: none;
+      display: block;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="site-nav"></div>
+  <script src="../assets/nav.js"></script>
+
+  <div class="page-header">
+    <h1>Math Boogers — Puzzle Game</h1>
+    <div class="tag-row">
+      <span class="tag tag-green">JavaScript</span>
+      <span class="tag tag-neutral">Personal</span>
+    </div>
+  </div>
+
+  <div class="game-and-notes">
+
+    <!-- GAME -->
+    <div class="game-frame">
+      <iframe src="math_boogers.html" title="Math Boogers"></iframe>
+    </div>
+
+    <!-- DEV NOTES -->
+    <div class="notes-col">
+      <div class="notes-header">
+        <span class="notes-heading">// Dev Notes</span>
+      </div>
+      <div class="notes-body">
+
+        <div class="note-block">
+          <div class="note-label note-label-green">What went well</div>
+          <div class="note-text">
+            <p>Write your notes here.</p>
+          </div>
+        </div>
+
+        <div class="note-divider"></div>
+
+        <div class="note-block">
+          <div class="note-label note-label-blue">What I learned</div>
+          <div class="note-text">
+            <p>Write your notes here.</p>
+          </div>
+        </div>
+
+        <div class="note-divider"></div>
+
+        <div class="note-block">
+          <div class="note-label note-label-red">Mistakes &amp; what I'd do differently</div>
+          <div class="note-text">
+            <p>Write your notes here.</p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <div id="other-projects"></div>
+
+</body>
+</html>

@@ -222,6 +222,7 @@ function generateGrassStrip3D(params, worldOffsetX = 0, worldOffsetZ = 0, segmen
         const dy   = right[1] * cosA + forward[1] * sinA;
         const dz   = right[2] * cosA + forward[2] * sinA;
 
+        // Front face (left then right)
         for (let j = 0; j <= segments; j++) {
             const t      = j / segments;
             const width  = bw * (1.0 - t);
@@ -235,6 +236,30 @@ function generateGrassStrip3D(params, worldOffsetX = 0, worldOffsetZ = 0, segmen
             );
             vertices.push(
                 px + dx * width / 2, py + dy * width / 2, pz + dz * width / 2,
+                baseX, baseZ, t
+            );
+        }
+
+        // Back face — degenerate connector then same strip with winding flipped
+        // (right then left), so CULL_FACE(BACK) renders both sides
+        const lastFront = vertices.slice(-6);
+        // degenerate to stitch
+        vertices.push(...lastFront);
+
+        for (let j = 0; j <= segments; j++) {
+            const t      = j / segments;
+            const width  = bw * (1.0 - t);
+            const curve  = (t * t) * bendAmount;
+            const px = baseX + up[0] * t * height + forward[0] * curve;
+            const py = baseY + up[1] * t * height + forward[1] * curve;
+            const pz = baseZ + up[2] * t * height + forward[2] * curve;
+            // swapped: right first, then left — flips winding order
+            vertices.push(
+                px + dx * width / 2, py + dy * width / 2, pz + dz * width / 2,
+                baseX, baseZ, t
+            );
+            vertices.push(
+                px - dx * width / 2, py - dy * width / 2, pz - dz * width / 2,
                 baseX, baseZ, t
             );
         }
@@ -447,12 +472,10 @@ class ChunkManager {
             if (chunk.vertCount[0] === 0) continue;
             if (!this._chunkVisible(chunk, planes)) continue;
 
-            // Distance from camera target to chunk centre — XZ only
             const dx   = chunk.worldX - camX;
             const dz   = chunk.worldZ - camZ;
             const dist = Math.sqrt(dx * dx + dz * dz);
 
-            // Select LOD buffer by distance — draw it completely, no prefix
             const lodLevel = dist < lodInner ? 0
                            : dist < lodMid   ? 1
                            :                   2;

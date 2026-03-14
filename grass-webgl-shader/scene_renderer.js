@@ -25,34 +25,12 @@ void main() {
 const groundFragSrc = `#version 300 es
 precision mediump float;
 
-uniform float hue;
-uniform float brightness;
-uniform float variance;
-uniform float patchiness;
-uniform float noiseScale;
-uniform float sharpness;
-uniform float densityBias;
-uniform float camX;
-uniform float camZ;
+uniform float groundH;
+uniform float groundS;
+uniform float groundL;
 
 in vec3 vPos;
 out vec4 fragColor;
-
-float hashNoise(vec2 p) {
-    float n = sin(dot(p, vec2(127.1, 311.7))) * 43758.5453;
-    return fract(n) * 2.0 - 1.0;
-}
-
-float smoothNoise(vec2 p) {
-    vec2 i = floor(p);
-    vec2 f = fract(p);
-    vec2 u = f * f * (3.0 - 2.0 * f);
-    float a = hashNoise(i);
-    float b = hashNoise(i + vec2(1.0, 0.0));
-    float c = hashNoise(i + vec2(0.0, 1.0));
-    float d = hashNoise(i + vec2(1.0, 1.0));
-    return mix(mix(a, b, u.x), mix(c, d, u.x), u.y);
-}
 
 vec3 hslToRgb(float h, float s, float l) {
     s /= 100.0; l /= 100.0;
@@ -66,34 +44,8 @@ vec3 hslToRgb(float h, float s, float l) {
     return vec3(r, g, b);
 }
 
-float posRand(vec2 pos) {
-    return fract(sin(dot(pos, vec2(127.1, 311.7))) * 43758.5453);
-}
-
 void main() {
-    float fragDist = length(vec2(vPos.x - camX, vPos.z - camZ));
-
-    // Coarsen noise with distance — far fragments read as smooth blended color
-    float adaptiveScale = noiseScale / (1.0 + fragDist * 0.15);
-
-    float rand = posRand(vec2(vPos.x, vPos.z));
-
-    // Dirt — tinted slightly toward grass even in bare patches
-    vec3 dirt = vec3(0.35 + rand * 0.08, 0.22 + rand * 0.06, 0.10 + rand * 0.04);
-
-    // Grass color
-    float bladeLit = clamp(brightness * 100.0 + (rand - 0.5) * variance, 5.0, 50.0);
-    vec3  grass    = hslToRgb(hue, 100.0, bladeLit * 0.85);
-
-    // Soften dirt toward grass so bare patches don't contrast so harshly
-    dirt = mix(dirt, grass, 0.25);
-
-    // Coverage using adaptive noise scale
-    float n01    = (smoothNoise(vec2(vPos.x, vPos.z) * adaptiveScale) + 1.0) * 0.5;
-    float shaped = pow(n01, sharpness);
-    float cover  = clamp(densityBias + shaped * sqrt(patchiness), 0.0, 1.0);
-
-    fragColor = vec4(mix(dirt, grass, cover), 1.0);
+    fragColor = vec4(hslToRgb(groundH, groundS, groundL), 1.0);
 }`;
 
 // ── SKY SHADER ─────────────────────────────────────────────────────────────
@@ -173,19 +125,13 @@ function buildProgram(vertSrc, fragSrc) {
 
 const groundProgram = buildProgram(groundVertSrc, groundFragSrc);
 const gnd = {
-    p:           gl.getAttribLocation(groundProgram,  'p'),
-    model:       gl.getUniformLocation(groundProgram, 'model'),
-    view:        gl.getUniformLocation(groundProgram, 'view'),
-    project:     gl.getUniformLocation(groundProgram, 'project'),
-    hue:         gl.getUniformLocation(groundProgram, 'hue'),
-    brightness:  gl.getUniformLocation(groundProgram, 'brightness'),
-    variance:    gl.getUniformLocation(groundProgram, 'variance'),
-    patchiness:  gl.getUniformLocation(groundProgram, 'patchiness'),
-    noiseScale:  gl.getUniformLocation(groundProgram, 'noiseScale'),
-    sharpness:   gl.getUniformLocation(groundProgram, 'sharpness'),
-    densityBias: gl.getUniformLocation(groundProgram, 'densityBias'),
-    camX: gl.getUniformLocation(groundProgram, 'camX'),
-    camZ: gl.getUniformLocation(groundProgram, 'camZ'),
+    p:       gl.getAttribLocation(groundProgram,  'p'),
+    model:   gl.getUniformLocation(groundProgram, 'model'),
+    view:    gl.getUniformLocation(groundProgram, 'view'),
+    project: gl.getUniformLocation(groundProgram, 'project'),
+    groundH: gl.getUniformLocation(groundProgram, 'groundH'),
+    groundS: gl.getUniformLocation(groundProgram, 'groundS'),
+    groundL: gl.getUniformLocation(groundProgram, 'groundL'),
 };
 
 const skyProgram = buildProgram(skyVertSrc, skyFragSrc);
@@ -215,6 +161,8 @@ window.GrassRenderer.init(gl, getHeight);
 rebuildGround();
 
 gl.enable(gl.DEPTH_TEST);
+gl.enable(gl.CULL_FACE);
+gl.cullFace(gl.BACK);
 
 // ── CAMERA ─────────────────────────────────────────────────────────────────
 let camAngle   = 0;
@@ -291,6 +239,15 @@ function updateMovement() {
     camTargetZ += dz * CAM_SPEED * dt;
 }
 
+// ── GROUND COLOR ───────────────────────────────────────────────────────────
+function grassHueToGroundColor(hue) {
+    // Shift ~100 degrees toward brown/tan, desaturate, pale and light
+    const h = ((hue - 100 + 360) % 360);
+    const s = 30;
+    const l = 42 + Math.sin((hue / 360) * Math.PI) * 10;
+    return { h, s, l };
+}
+
 // ── DRAW LOOP ──────────────────────────────────────────────────────────────
 function draw() {
     updateMovement();
@@ -319,32 +276,27 @@ function draw() {
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
     gl.depthMask(true);
 
-    // Ground — pass grass params so impostor matches blade placement
-    const gp        = window.GrassRenderer.params;
-    const p         = Math.sqrt(gp.patchiness);
-    const sharpness = 1.0 + p * 8.0;
+    // Ground
+    const gp = window.GrassRenderer.params;
+    const gc = grassHueToGroundColor(gp.hue);
 
+    gl.disable(gl.CULL_FACE);
     gl.enable(gl.POLYGON_OFFSET_FILL);
     gl.polygonOffset(1.0, 1.0);
     gl.useProgram(groundProgram);
     gl.uniformMatrix4fv(gnd.model,   false, modelMatrix);
     gl.uniformMatrix4fv(gnd.view,    false, viewMatrix);
     gl.uniformMatrix4fv(gnd.project, false, projMatrix);
-    gl.uniform1f(gnd.hue,         gp.hue);
-    gl.uniform1f(gnd.brightness,  gp.brightness);
-    gl.uniform1f(gnd.variance,    gp.variance);
-    gl.uniform1f(gnd.patchiness,  gp.patchiness);
-    gl.uniform1f(gnd.noiseScale,  0.8);
-    gl.uniform1f(gnd.sharpness,   sharpness);
-    gl.uniform1f(gnd.densityBias, 1.0 - p);
-    gl.uniform1f(gnd.camX, camTargetX);
-    gl.uniform1f(gnd.camZ, camTargetZ);
+    gl.uniform1f(gnd.groundH, gc.h);
+    gl.uniform1f(gnd.groundS, gc.s);
+    gl.uniform1f(gnd.groundL, gc.l);
     gl.bindBuffer(gl.ARRAY_BUFFER,         groundVBO);
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, groundIBO);
     gl.vertexAttribPointer(gnd.p, 3, gl.FLOAT, false, 12, 0);
     gl.enableVertexAttribArray(gnd.p);
     gl.drawElements(gl.TRIANGLE_STRIP, groundIndexCount, gl.UNSIGNED_SHORT, 0);
     gl.disable(gl.POLYGON_OFFSET_FILL);
+    gl.enable(gl.CULL_FACE);
 
     // Grass
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);

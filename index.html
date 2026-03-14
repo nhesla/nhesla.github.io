@@ -5,6 +5,58 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Nikolas Hesla — Portfolio</title>
   <link rel="stylesheet" href="assets/style.css" />
+  <style>
+    .projects-section-heading { margin-bottom: 1.5rem; }
+    .section-toggle {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      cursor: pointer;
+      user-select: none;
+      background: none;
+      border: none;
+      padding: 0;
+      width: 100%;
+      text-align: left;
+      color: var(--muted);
+      font-family: var(--sans);
+    }
+    .section-toggle h2 {
+      margin: 0;
+      font-weight: 800;
+      font-size: .85rem;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      white-space: nowrap;
+      transition: color .15s;
+    }
+    .section-toggle:hover h2 { color: var(--text); }
+    .section-toggle .line {
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+    .section-caret {
+      font-family: var(--mono);
+      color: var(--border);
+      font-size: 0.6rem;
+      flex-shrink: 0;
+      transition: transform 0.2s, color 0.15s;
+    }
+    .section-toggle:hover .section-caret { color: var(--muted); }
+    .section-toggle[aria-expanded="true"] .section-caret { transform: rotate(180deg); }
+    .section-body {
+      overflow: hidden;
+      transition: max-height 0.35s ease, opacity 0.25s ease;
+      max-height: 0;
+      opacity: 0;
+    }
+    .section-body.open {
+      max-height: 2000px;
+      opacity: 1;
+    }
+  </style>
 </head>
 <body>
 
@@ -19,150 +71,177 @@
     </p>
   </div>
 
+  <!-- ── Recent Interactive Projects ─────────────────────────────────── -->
   <div class="projects-section">
     <div class="projects-section-heading">
-      <h2>Game Projects</h2>
-      <div class="line"></div>
+      <button class="section-toggle" aria-expanded="false" aria-controls="section-interactive">
+        <h2>Recent Interactive Projects</h2>
+        <div class="line"></div>
+        <span class="section-caret">▲</span>
+      </button>
     </div>
-    <div class="projects-grid">
+    <div class="section-body" id="section-interactive">
+      <div class="projects-grid">
 
-      <a href="TowerDefense/index.html" class="proj-card">
-        <div class="proj-card-top">
-          <div class="proj-icon" style="background:rgba(255,107,107,0.1)">🗼</div>
-          <div>
-            <h3>Tower Defense</h3>
-            <div class="tag-row" style="margin-bottom:0.4rem">
-              <span class="tag tag-green">Java</span>
-              <span class="tag tag-neutral">Java Applet</span>
-              <span class="tag tag-neutral">High School</span>
+        <a href="grass-webgl-shader/index.html" class="proj-card">
+          <div class="proj-card-top">
+            <div class="proj-icon" style="background:rgba(127,255,106,0.1)">🌿</div>
+            <div>
+              <h3>Grass Shader</h3>
+              <div class="tag-row" style="margin-bottom:0.4rem">
+                <span class="tag tag-green">GLSL</span>
+                <span class="tag tag-green">WebGL</span>
+                <span class="tag tag-green">JavaScript</span>
+              </div>
             </div>
           </div>
-        </div>
-        <p>My first passion project — a vector-graphics tower defense game built from scratch in Java.</p>
-        <span class="proj-card-arrow">Play →</span>
-      </a>
+          <p>Real-time grass rendered as a WebGL shader using a single triangle strip draw call.</p>
+          <span class="proj-card-arrow">View →</span>
+        </a>
 
-      <a href="phaser-tank-game/index.html" class="proj-card">
-        <div class="proj-card-top">
-          <div class="proj-icon" style="background:rgba(91,200,255,0.1)">🚀</div>
-          <div>
-            <h3>Tank Game</h3>
-            <div class="tag-row" style="margin-bottom:0.4rem">
-              <span class="tag tag-blue">JavaScript</span>
-              <span class="tag tag-blue">Phaser.js</span>
-              <span class="tag tag-neutral">School</span>
+        <a href="react-app-deck-investigator/index.html" class="proj-card">
+          <div class="proj-card-top">
+            <div class="proj-icon" style="background:rgba(255,200,50,0.1)">🃏</div>
+            <div>
+              <h3>TCG Deck Synergy Visualizer</h3>
+              <div class="tag-row" style="margin-bottom:0.4rem">
+                <span class="tag tag-blue">React</span>
+                <span class="tag tag-blue">TypeScript</span>
+                <span class="tag tag-blue">APIs</span>
+              </div>
             </div>
           </div>
-        </div>
-        <p>Browser tank game. WASD to move, mouse to aim and shoot, spacebar to jump.</p>
-        <span class="proj-card-arrow">Play →</span>
-      </a>
+          <p>Import a deck list from MTG, YuGiOh, or Disney Lorcana and visualize card synergies.</p>
+          <span class="proj-card-arrow">View →</span>
+        </a>
 
-      <a href="Vulcans_bad_suit_v1.i/index.html" class="proj-card">
-        <div class="proj-card-top">
-          <div class="proj-icon" style="background:rgba(200,150,255,0.1)">💣</div>
-          <div>
-            <h3>Vulcan's Bad Suit</h3>
-            <div class="tag-row" style="margin-bottom:0.4rem">
-              <span class="tag tag-neutral">GameMaker</span>
-              <span class="tag tag-green">JavaScript</span>
-              <span class="tag tag-neutral">School · Lead</span>
-            </div>
-          </div>
-        </div>
-        <p>Group project I led — a puzzle platformer where you launch yourself using bombs.</p>
-        <span class="proj-card-arrow">Play →</span>
-      </a>
+      </div>
+    </div>
+  </div>
 
-      <a href="grass-webgl-shader/index.html" class="proj-card">
-        <div class="proj-card-top">
-          <div class="proj-icon" style="background:rgba(127,255,106,0.1)">🌿</div>
-          <div>
-            <h3>Grass Shader</h3>
-            <div class="tag-row" style="margin-bottom:0.4rem">
-              <span class="tag tag-green">GLSL</span>
-              <span class="tag tag-green">WebGL</span>
-              <span class="tag tag-green">JavaScript</span>
-            </div>
-          </div>
+  <!-- ── Coding Challenges ─────────────────────────────────────────────── -->
+  <div class="projects-section">
+    <div class="projects-section-heading">
+      <button class="section-toggle" aria-expanded="false" aria-controls="section-challenges">
+        <h2>Coding Challenges</h2>
+        <div class="line"></div>
+        <span class="section-caret">▲</span>
+      </button>
+    </div>
+    <div class="section-body" id="section-challenges">
+      <div class="challenges-strip" style="padding-top:0; border-top:none;">
+        <div class="strip-heading" style="margin-top:0;">
+          <a href="challenges/index.html" class="strip-link">View all →</a>
         </div>
-        <p>Real-time grass rendered as a WebGL shader using a single triangle strip draw call.</p>
-        <span class="proj-card-arrow">View →</span>
-      </a>
-
-      <a href="react-app-deck-investigator/index.html" class="proj-card">
-        <div class="proj-card-top">
-          <div class="proj-icon" style="background:rgba(255,200,50,0.1)">🃏</div>
-          <div>
-            <h3>TCG Deck Synergy Visualizer</h3>
-            <div class="tag-row" style="margin-bottom:0.4rem">
-              <span class="tag tag-blue">React</span>
-              <span class="tag tag-blue">TypeScript</span>
-              <span class="tag tag-blue">APIs</span>
+        <div class="chal-grid">
+          <a href="challenges/two-sum.html" class="chal-card">
+            <span class="diff-badge diff-easy">Easy</span>
+            <div>
+              <div class="chal-name">Two Sum</div>
+              <div class="chal-desc">Hash map for O(n) lookup instead of nested loops.</div>
+              <div class="chal-lang">Python · LeetCode #1</div>
             </div>
-          </div>
-        </div>
-        <p>Import a deck list from MTG, YuGiOh, or Disney Lorcana and visualize card synergies.</p>
-        <span class="proj-card-arrow">View →</span>
-      </a>
-
-      <a href="TaxDodgers_Godot/index.html" class="proj-card">
-        <div class="proj-card-top">
-          <div class="proj-icon" style="background:rgba(100,220,150,0.1)">🧾</div>
-          <div>
-            <h3>Tax Dodgers</h3>
-            <div class="tag-row" style="margin-bottom:0.4rem">
-              <span class="tag tag-green">Godot</span>
-              <span class="tag tag-green">GDScript</span>
-              <span class="tag tag-neutral">2 Player</span>
-            </div>
-          </div>
-        </div>
-        <p>Two-player party mini game — compete with a friend to avoid your civic duties for as long as possible.</p>
-        <span class="proj-card-arrow">Play →</span>
-      </a>
-
-      <div class="proj-card" style="cursor:default">
-        <div class="proj-card-top">
-          <div class="proj-icon" style="background:rgba(255,150,100,0.1)">🎂</div>
-          <div>
-            <h3>Tasty Pastries <span style="font-weight:400;color:var(--muted);font-size:0.78rem">(Capstone)</span></h3>
-            <div class="tag-row" style="margin-bottom:0.4rem">
-              <span class="tag tag-red">Unreal Engine 4</span>
-              <span class="tag tag-red">C++</span>
-              <span class="tag tag-neutral">Capstone · Lead</span>
-            </div>
-          </div>
-        </div>
-        <p>First-person baking game in UE4. I led this capstone project — trailer below.</p>
-        <div class="video-wrap">
-          <iframe src="https://www.youtube.com/embed/uUYjZqz1piY"
-            title="Tasty Pastries trailer"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowfullscreen></iframe>
+          </a>
         </div>
       </div>
-
     </div>
   </div>
 
-  <div class="challenges-strip">
-    <div class="strip-heading">
-      <h2>Coding Challenges</h2>
-      <div class="strip-line"></div>
-      <a href="challenges/index.html" class="strip-link">View all →</a>
+  <!-- ── School Game Projects ─────────────────────────────────────────── -->
+  <div class="projects-section">
+    <div class="projects-section-heading">
+      <button class="section-toggle" aria-expanded="false" aria-controls="section-games">
+        <h2>School Game Projects</h2>
+        <div class="line"></div>
+        <span class="section-caret">▲</span>
+      </button>
     </div>
-    <div class="chal-grid">
-      <a href="challenges/two-sum.html" class="chal-card">
-        <span class="diff-badge diff-easy">Easy</span>
-        <div>
-          <div class="chal-name">Two Sum</div>
-          <div class="chal-desc">Hash map for O(n) lookup instead of nested loops.</div>
-          <div class="chal-lang">Python · LeetCode #1</div>
+    <div class="section-body" id="section-games">
+      <div class="projects-grid">
+
+        <a href="phaser-tank-game/index.html" class="proj-card">
+          <div class="proj-card-top">
+            <div class="proj-icon" style="background:rgba(91,200,255,0.1)">🚀</div>
+            <div>
+              <h3>Tank Game</h3>
+              <div class="tag-row" style="margin-bottom:0.4rem">
+                <span class="tag tag-blue">JavaScript</span>
+                <span class="tag tag-blue">Phaser.js</span>
+                <span class="tag tag-neutral">School</span>
+              </div>
+            </div>
+          </div>
+          <p>Browser tank game. WASD to move, mouse to aim and shoot, spacebar to jump.</p>
+          <span class="proj-card-arrow">Play →</span>
+        </a>
+
+        <a href="MathBoogers/index.html" class="proj-card">
+          <div class="proj-card-top">
+            <div class="proj-icon" style="background:rgba(168,224,99,0.1)">🟢</div>
+            <div>
+              <h3>Math Boogers — Puzzle Game</h3>
+              <div class="tag-row" style="margin-bottom:0.4rem">
+                <span class="tag tag-green">JavaScript</span>
+                <span class="tag tag-neutral">Personal</span>
+              </div>
+            </div>
+          </div>
+          <p>Drag and drop math puzzles. Combine boogers using +, −, ×, and ÷ to hit the target number.</p>
+          <span class="proj-card-arrow">Play →</span>
+        </a>
+
+        <a href="TaxDodgers_Godot/index.html" class="proj-card">
+          <div class="proj-card-top">
+            <div class="proj-icon" style="background:rgba(100,220,150,0.1)">🧾</div>
+            <div>
+              <h3>Tax Dodgers</h3>
+              <div class="tag-row" style="margin-bottom:0.4rem">
+                <span class="tag tag-green">Godot</span>
+                <span class="tag tag-green">GDScript</span>
+                <span class="tag tag-neutral">2 Player</span>
+              </div>
+            </div>
+          </div>
+          <p>Two-player party mini game — compete with a friend to avoid your civic duties for as long as possible.</p>
+          <span class="proj-card-arrow">Play →</span>
+        </a>
+
+        <div class="proj-card" style="cursor:default">
+          <div class="proj-card-top">
+            <div class="proj-icon" style="background:rgba(255,150,100,0.1)">🎂</div>
+            <div>
+              <h3>Tasty Pastries <span style="font-weight:400;color:var(--muted);font-size:0.78rem">(Capstone)</span></h3>
+              <div class="tag-row" style="margin-bottom:0.4rem">
+                <span class="tag tag-red">Unreal Engine 4</span>
+                <span class="tag tag-red">C++</span>
+                <span class="tag tag-neutral">Capstone · Lead</span>
+              </div>
+            </div>
+          </div>
+          <p>First-person baking game in UE4. I led this capstone project — trailer below.</p>
+          <div class="video-wrap">
+            <iframe src="https://www.youtube.com/embed/uUYjZqz1piY"
+              title="Tasty Pastries trailer"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowfullscreen></iframe>
+          </div>
         </div>
-      </a>
+
+      </div>
     </div>
   </div>
+
+  <script>
+    document.querySelectorAll(".section-toggle").forEach(toggle => {
+      toggle.addEventListener("click", () => {
+        const expanded = toggle.getAttribute("aria-expanded") === "true";
+        const bodyId = toggle.getAttribute("aria-controls");
+        const body = document.getElementById(bodyId);
+        toggle.setAttribute("aria-expanded", !expanded);
+        body.classList.toggle("open", !expanded);
+      });
+    });
+  </script>
 
 </body>
 </html>

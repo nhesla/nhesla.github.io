@@ -31,10 +31,22 @@
     div.gm4html5_login_button  { float: left; }
     div.gm4html5_login_header  { text-align: center; }
 
-    /* Make the canvas fill the embed column */
-    .embed-wrap { display: flex; align-items: center; justify-content: center; }
-    .embed-wrap .gm4html5_div_class { width: 100%; height: 100%; }
-    .embed-wrap canvas { width: 100% !important; height: 100% !important; }
+    /* Lock game to 800x600 — no scaling */
+    .embed-wrap {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+    .embed-wrap .gm4html5_div_class {
+      width: 800px !important;
+      height: 600px !important;
+      flex-shrink: 0;
+    }
+    .embed-wrap canvas {
+      width: 800px !important;
+      height: 600px !important;
+    }
   </style>
 </head>
 <body>
@@ -58,12 +70,37 @@
     <div class="embed-col">
       <div class="embed-wrap">
         <div class="gm4html5_div_class" id="gm4html5_div_id">
-          <canvas id="canvas" width="1024" height="768">
+          <canvas id="canvas" width="800" height="600">
             <p>Your browser doesn't support HTML5 canvas.</p>
           </canvas>
         </div>
+        <!-- MUTE SCRIPT MUST COME FIRST -->
+        <script>
+          (function() {
+            const OrigAudioContext = window.AudioContext || window.webkitAudioContext;
+            if (!OrigAudioContext) return;
+            function MutedContext(...args) {
+              const ctx = new OrigAudioContext(...args);
+              const gain = ctx.createGain();
+              gain.gain.value = 0;
+              gain.connect(ctx.destination);
+              ctx._muteGain = gain;
+              return ctx;
+            }
+            MutedContext.prototype = OrigAudioContext.prototype;
+            window.AudioContext = window.webkitAudioContext = MutedContext;
+          })();
+          // Also silence any <audio> elements GM might create
+          document.addEventListener('play', e => {
+            if (e.target.tagName === 'AUDIO') e.target.volume = 0;
+          }, true);
+        </script>
+        
+        <!-- THEN load GameMaker -->
         <script type="text/javascript" src="html5game/Vulcans_bad_suit_v1.0_restored.js?cachebust=733548561"></script>
-        <script>window.onload = GameMaker_Init;</script>
+        <script>
+          window.onload = GameMaker_Init;
+        </script>
       </div>
       <div class="embed-bar">
         <div class="embed-dot"></div>
@@ -100,9 +137,6 @@
           <div class="note-label note-label-red">Mistakes & what I'd do differently</div>
           <div class="note-text">
             <p>Write your notes here.</p>
-            <!-- To add an image:
-            <img class="note-img" src="../assets/images/vulcans-suit-screenshot.png" alt="description" />
-            -->
           </div>
         </div>
 

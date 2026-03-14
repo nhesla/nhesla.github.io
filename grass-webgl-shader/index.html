@@ -44,8 +44,7 @@
         <div class="note-block">
           <div class="note-label note-label-green">What went well</div>
           <div class="note-text">
-            <p>We're using triangle strips, simplex noise, LODs, frustum culling, 
-              and Hilbert curves to optimize this project baby!</p>
+            <p>Several rendering optimizations came together well. Grass blades are generated along a Hilbert curve so spatially adjacent blades are also adjacent in memory, which improves cache performance during chunk builds. The chunk system streams geometry in rings around the camera and recycles chunks as the view moves. LOD reduces triangle count with distance, and frustum culling skips off-screen chunks entirely before any draw work happens. The ground shader uses the same noise and color parameters as the grass so the two blend together naturally.</p>
           </div>
         </div>
 
@@ -54,7 +53,9 @@
         <div class="note-block">
           <div class="note-label note-label-blue">What I learned</div>
           <div class="note-text">
-            <p>Write your notes here.</p>
+            <p>Working with GLSL was new territory for me — it's less of a traditional programming language and more of a set of instructions you write directly for the GPU, with its own rules around types, precision, and what data is available at each stage of the pipeline. Being able to describe the techniques I wanted to implement to Claude and have it translate them into working shader code was a huge help. I could focus on understanding what the code was doing and why rather than getting stuck on syntax.</p>
+            <p>The core idea for the project came from a game programming video that showed how you could draw thousands of grass blades in a single draw call by connecting them into one continuous triangle strip using degenerate triangles — zero-area triangles that are invisible but stitch two strips together. I thought that was brilliant and I wanted to try figuring it out myself.</p>
+            <p>I also learned that WebGL behavior varies more across GPU vendors than I expected. Something that looked fine on my machine rendered as flickering static on Windows hardware due to differences in how drivers handle back-face rendering. That's the kind of thing you can't catch without testing on different devices.</p>
           </div>
         </div>
 
@@ -63,10 +64,7 @@
         <div class="note-block">
           <div class="note-label note-label-red">Mistakes & what I'd do differently</div>
           <div class="note-text">
-            <p>Write your notes here.</p>
-            <!-- To add an image:
-            <img class="note-img" src="../assets/images/grass-shader-screenshot.png" alt="description" />
-            -->
+            <p>Grass geometry is rebuilt on the CPU in JavaScript whenever parameters change, which causes a noticeable hitch on sliders like blade count. The right approach would be GPU-side generation using transform feedback — the CPU would just send parameters and the GPU would generate and buffer its own geometry. I'd also add shadow casting between blades and ambient occlusion at the base, which would make the grass feel grounded rather than floating on the surface.</p>
           </div>
         </div>
 
