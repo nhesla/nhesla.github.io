@@ -174,7 +174,7 @@ function boogerLabel(b){
 
 // ── Puzzle generation ─────────────────────────────────────────────
 var DIFF={
-  easy:  {minB:4,maxB:5,addMax:8,useMul:false,useDiv:false,maxMag:60},
+  easy:  {minB:3,maxB:4,addMax:6,useMul:true,mulMax:4,useDiv:false,maxMag:60},
   medium:{minB:5,maxB:6,addMax:9,useMul:true,mulMax:5,useDiv:false,maxMag:120},
   hard:  {minB:6,maxB:7,addMax:9,useMul:true,mulMax:6,useDiv:true,maxMag:250},
 };
@@ -204,6 +204,12 @@ function generatePuzzle(diff){
   var count=cfg.minB+Math.floor(Math.random()*(cfg.maxB-cfg.minB+1));
   var pool=[];
   for(var i=0;i<count;i++)pool.push(randomBooger(cfg));
+
+  // Guarantee at least one multiply booger so order-of-operations matters
+  if(cfg.useMul&&!pool.some(function(b){return b.op==='*';})){
+    var idx=Math.floor(Math.random()*pool.length);
+    pool[idx]={op:'*',num:fv(randInt(2,cfg.mulMax||4))};
+  }
 
   // Simulate forward merges to find the target
   var sim=pool.map(function(b){return{op:b.op,num:{n:b.num.n,d:b.num.d}};});
@@ -398,8 +404,9 @@ function setupDrag(el,b){
 
     var rawVx=cx-b.prevMx,rawVy=cy-b.prevMy;
     b.prevMx=cx;b.prevMy=cy;
+    var oldVx=b.vx,oldVy=b.vy;
     b.vx=rawVx*0.45+b.prevVx*0.55;b.vy=rawVy*0.45+b.prevVy*0.55;
-    var ax=b.vx-b.prevVx,ay=b.vy-b.prevVy;
+    var ax=b.vx-oldVx,ay=b.vy-oldVy;
     b.prevVx=b.vx;b.prevVy=b.vy;
     var am=Math.hypot(ax,ay);
     if(am>0.1){

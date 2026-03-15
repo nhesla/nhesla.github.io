@@ -22,6 +22,34 @@
       border: none;
       display: block;
     }
+    .notes-col {
+      transition: width 0.3s ease, opacity 0.3s ease;
+    }
+    .notes-col.collapsed {
+      width: 0 !important;
+      overflow: hidden;
+      opacity: 0;
+      pointer-events: none;
+    }
+    .notes-toggle-btn {
+      background: none;
+      border: 1px solid #445;
+      border-radius: 4px;
+      color: #888;
+      font-size: 11px;
+      font-family: monospace;
+      padding: 3px 10px;
+      cursor: pointer;
+      letter-spacing: 0.05em;
+      margin-left: 8px;
+    }
+    .notes-toggle-btn:hover { color: white; border-color: #88aaff; }
+
+    @media (max-width: 768px) {
+      .game-frame iframe {
+        height: calc(100vh - 100px);
+      }
+    }
   </style>
 </head>
 <body>
@@ -34,6 +62,7 @@
     <div class="tag-row">
       <span class="tag tag-green">JavaScript</span>
       <span class="tag tag-neutral">Personal</span>
+      <button class="notes-toggle-btn" id="notesBtn" onclick="toggleNotes()">// Dev Notes ▶</button>
     </div>
   </div>
 
@@ -45,7 +74,7 @@
     </div>
 
     <!-- DEV NOTES -->
-    <div class="notes-col">
+    <div class="notes-col" id="notesCol">
       <div class="notes-header">
         <span class="notes-heading">// Dev Notes</span>
       </div>
@@ -81,6 +110,19 @@
   </div>
 
   <div id="other-projects"></div>
+
+  <script>
+    // Default to collapsed on mobile
+    var notesCol = document.getElementById('notesCol');
+    var notesBtn = document.getElementById('notesBtn');
+    var isMobile = window.innerWidth <= 768;
+    if (isMobile) notesCol.classList.add('collapsed');
+
+    function toggleNotes() {
+      var collapsed = notesCol.classList.toggle('collapsed');
+      notesBtn.textContent = collapsed ? '// Dev Notes ▶' : '// Dev Notes ◀';
+    }
+  </script>
 
 </body>
 </html>
