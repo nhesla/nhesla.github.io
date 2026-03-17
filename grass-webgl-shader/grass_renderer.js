@@ -65,10 +65,10 @@ out float vBladeT;
 
 void main()
 {
-    float wave = sin(p.x * windDirX * 2.0 + p.z * windDirZ * 2.0 + time * windSpeed)
-                 * windIntensity * bladeT;
-    float turb = sin(p.x * 3.7 + p.z * 2.3 + time * windSpeed * 1.7)
-                 * windIntensity * 0.4 * bladeT;
+	float wave = sin(basePos.x * windDirX * 2.0 + basePos.y * windDirZ * 2.0 + time * windSpeed)
+             * windIntensity * bladeT;
+float turb = sin(basePos.x * 3.7 + basePos.y * 2.3 + time * windSpeed * 1.7)
+             * windIntensity * 0.4 * bladeT;
     vec3 finalPos = p + vec3(
         windDirX * (wave + turb),
         0.0,
@@ -110,18 +110,18 @@ float posRand(vec2 pos) {
 }
 
 void main() {
-    float rand  = posRand(vBase);
+	if (vBladeT < 0.0) discard;    
+
+	float rand  = posRand(vBase);
     float rand2 = posRand(vBase + vec2(43.21, 17.89));
 
     float bladeHue = mod(hue + (rand2 - 0.5) * hueVariance, 360.0);
     float bladeLit = clamp(brightness * 100.0 + (rand - 0.5) * variance, 5.0, 50.0);
 
     float tipThreshold = 0.55 + rand * 0.35;
-    float alpha = 1.0 - smoothstep(tipThreshold, tipThreshold + 0.18, vBladeT);
+    if (vBladeT > tipThreshold) discard;
 
-    if (alpha < 0.01) discard;
-
-    fragColor = vec4(hslToRgb(bladeHue, 100.0, bladeLit), alpha);
+    fragColor = vec4(hslToRgb(bladeHue, 100.0, bladeLit), 1.0);
 }`;
 
 // ── HEIGHTMAP HELPERS ──────────────────────────────────────────────────────
@@ -219,8 +219,8 @@ function generateGrassStrip3D(params, worldOffsetX = 0, worldOffsetZ = 0, segmen
         const dz   = right[2] * cosA + forward[2] * sinA;
 
         // ── Degenerate stitch from previous blade ──────────────────────────
-        const thisLeft  = [baseX - dx * bw / 2, baseY - dy * bw / 2, baseZ - dz * bw / 2, baseX, baseZ, 0.0];
-        const thisRight = [baseX + dx * bw / 2, baseY + dy * bw / 2, baseZ + dz * bw / 2, baseX, baseZ, 0.0];
+        const thisLeft  = [baseX - dx * bw / 2, baseY - dy * bw / 2, baseZ - dz * bw / 2, baseX, baseZ, -1.0];
+	const thisRight = [baseX + dx * bw / 2, baseY + dy * bw / 2, baseZ + dz * bw / 2, baseX, baseZ, -1.0];
 
         if (prevBladeLast !== null) {
             vertices.push(...prevBladeLast);
@@ -597,4 +597,4 @@ function draw(viewMatrix, projMatrix, camX = 0, camZ = 0) {
     chunkManager.draw(gl, loc, viewMatrix, projMatrix, params, camX, camZ, time);
 }
 
-window.GrassRenderer = { init, draw, rebuildGrass, params };
+window.GrassRenderer = { init, draw, rebuildGrass, params, getBackFace: () => _backFace };

@@ -103,7 +103,7 @@ function generateGroundMesh(totalWidth, totalDepth, subX, subZ) {
 
 // ── WEBGL SETUP ────────────────────────────────────────────────────────────
 const canvas = document.querySelector('canvas');
-const gl     = canvas.getContext('webgl2');
+const gl     = canvas.getContext('webgl2', { antialias: false });
 
 function buildProgram(vertSrc, fragSrc) {
     function compile(type, src) {
@@ -157,7 +157,21 @@ function rebuildGround() {
     gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, mesh.indices, gl.STATIC_DRAW);
 }
 
+function resizeCanvas() {
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width  = Math.floor(canvas.clientWidth  * dpr);
+    canvas.height = Math.floor(canvas.clientHeight * dpr);
+    gl.viewport(0, 0, canvas.width, canvas.height);
+}
+
+resizeCanvas();
+window.addEventListener('resize', resizeCanvas);
 window.GrassRenderer.init(gl, getHeight);
+
+const ext = gl.getExtension('WEBGL_debug_renderer_info');
+console.log('Renderer:', gl.getParameter(ext.UNMASKED_RENDERER_WEBGL));
+console.log('Using back face geometry:', GrassRenderer.getBackFace());
+
 rebuildGround();
 
 gl.enable(gl.DEPTH_TEST);
@@ -262,7 +276,7 @@ function draw() {
     const target      = [camTargetX, 0, camTargetZ];
     const viewMatrix  = m4.inverse(m4.lookAt(eye, target, [0, 1, 0]));
     const projMatrix  = m4.perspective(
-        Math.PI / 4, canvas.clientWidth / canvas.clientHeight, 0.1, 200);
+        Math.PI / 4, canvas.clientWidth / canvas.clientHeight, 0.5, 200);
     const modelMatrix = m4.identity();
 
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
@@ -299,7 +313,7 @@ function draw() {
     gl.enable(gl.CULL_FACE);
 
     // Grass
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
+	gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
     window.GrassRenderer.draw(viewMatrix, projMatrix, camTargetX, camTargetZ);
 
     requestAnimationFrame(draw);
