@@ -36,6 +36,7 @@ export interface cardInfo {
   lore:          number | null;
   inkable:       boolean | null;
   characterName: string | null;
+  inkColor:      string | null;   // Lorcana ink color, e.g. "Amber", "Sapphire"
 }
 
 export interface Card {
@@ -250,7 +251,7 @@ export async function fetchCardDataStandalone(listOfCards: string, game: string)
               text: face.oracle_text || "", typeLine: tl, superTypes, cardTypes, subTypes,
               cost: card.cmc ?? null, keywords: card.keywords ?? [],
               power: parseStat(face.power ?? card.power), toughness: parseStat(face.toughness ?? card.toughness),
-              manaCost: face.mana_cost || card.mana_cost || null, lore: null, inkable: null, characterName: null,
+              manaCost: face.mana_cost || card.mana_cost || null, lore: null, inkable: null, characterName: null, inkColor: null,
             };
           });
         } else {
@@ -261,7 +262,7 @@ export async function fetchCardDataStandalone(listOfCards: string, game: string)
             text: card.oracle_text || "", typeLine: tl, superTypes, cardTypes, subTypes,
             cost: card.cmc ?? null, keywords: card.keywords ?? [],
             power: parseStat(card.power), toughness: parseStat(card.toughness),
-            manaCost: card.mana_cost || null, lore: null, inkable: null, characterName: null,
+            manaCost: card.mana_cost || null, lore: null, inkable: null, characterName: null, inkColor: null,
           }];
         }
       } else if (game === "YGO") {
@@ -273,7 +274,7 @@ export async function fetchCardDataStandalone(listOfCards: string, game: string)
           text: card.desc || "", typeLine: typeStr, superTypes, cardTypes, subTypes,
           cost: card.level ?? card.rank ?? card.linkval ?? null, keywords: [],
           power: parseStat(card.atk), toughness: parseStat(card.def),
-          manaCost: null, lore: null, inkable: null, characterName: null,
+          manaCost: null, lore: null, inkable: null, characterName: null, inkColor: null,
         }];
       } else if (game === "LOR") {
         const fullName = card.Name ?? "";
@@ -292,6 +293,7 @@ export async function fetchCardDataStandalone(listOfCards: string, game: string)
           power: parseStat(card.Strength), toughness: parseStat(card.Willpower),
           manaCost: null, lore: card.Lore ?? null, inkable: card.Inkable ?? null,
           characterName: parseLorcanaCharacterName(fullName),
+          inkColor: card.Color ?? null,
         }];
       }
       return [];
@@ -492,7 +494,7 @@ class CardImporter extends Component<DeckListProps, DeckListState> {
               keywords: [],
               power: parseStat(card.atk),
               toughness: parseStat(card.def),
-              manaCost: null, lore: null, inkable: null, characterName: null,
+              manaCost: null, lore: null, inkable: null, characterName: null, inkColor: null,
             }];
           } else if (game === "LOR") {
             const fullName = card.Name ?? "";

@@ -82,7 +82,10 @@
         <div class="note-block">
           <div class="note-label note-label-green">What went well</div>
           <div class="note-text">
-            <p>Write your notes here.</p>
+            <p>The core interaction model works. Paste a decklist, get a canvas of card tokens connected by synergy lines — the feedback loop from list to visual is fast and the force-directed layout does a reasonable job clustering related cards together without any manual placement.</p>
+            <p>The manual connection layer ended up being more useful than expected. Since auto-detection can only catch so much, letting players draw their own connections, label them, and assign them to highlight groups fills in the gaps without requiring the engine to be smarter than it is. The canvas regions (ellipses) extend this further — players can draw boundary shapes over groups of cards to mark deck roles or game plan stages.</p>
+            <p>Supporting three card games from the same codebase required designing around the differences in how each game structures its card data. The Scryfall, YGOPro, and Lorcana APIs all return different shapes, so abstracting that into a common <code>Card</code> type early on kept the rest of the app clean. Synergy detection engines have now been built for all three games. MTG uses text pattern matching across seven detection layers. Lorcana uses named character references, Shift targets, Singer/Song pairs, and role detection. YuGiOh uses archetype keyword extraction from card names — which turned out to be the most effective approach for a game where synergies are almost entirely archetype-driven.</p>
+            <p>The layout now seeds card positions by functional role before running the force simulation, so cards of the same type start in predictable canvas zones. The result is a layout that reflects both what cards do and how they relate to each other.</p>
           </div>
         </div>
 
@@ -91,7 +94,9 @@
         <div class="note-block">
           <div class="note-label note-label-blue">What I learned</div>
           <div class="note-text">
-            <p>Write your notes here.</p>
+            <p>Auto-detecting synergies in Magic is genuinely hard. The game has over 25,000 unique cards with freeform rules text, so the synergy engine is a collection of regex patterns over card text — which works for clear mechanical relationships but misses anything that requires game knowledge to recognize. MTG was the hardest game to start with.</p>
+            <p>Each game turned out to need a fundamentally different detection strategy. Lorcana's synergies are mostly character-name-based — cards reference each other by name, which is clean to detect. YuGiOh's synergies are archetype-based — cards in the same deck share keyword fragments in their names, so counting name-word frequency is more useful than parsing card text. Picking the right strategy per game mattered more than having a unified approach across all three.</p>
+            <p>The role detection layer taught me something about the limits of text matching. Patterns like "destroy target creature" reliably catch removal spells, but the engine has no concept of broader context — it can't distinguish removal that's central to the deck's plan from a one-of included for sideboard reasons. The canvas is most useful when players are willing to do some manual annotation on top of what the engine detects.</p>
           </div>
         </div>
 
@@ -100,7 +105,8 @@
         <div class="note-block">
           <div class="note-label note-label-red">Mistakes &amp; what I'd do differently</div>
           <div class="note-text">
-            <p>Write your notes here.</p>
+            <p>The layout is decent but not yet where I want it. Cards seed into functional zones now, but there's no early-to-late game axis — a player can't look at the canvas and immediately read the deck's game plan from left to right. That would require understanding mana curve or turn sequencing, which the engine doesn't model.</p>
+            <p>The additional logic and features necessary to help readability of the graph is something I HOPE will make the app worth it. But the work required to get there is significant and the payoff is really unknown. Still nothing like it exists on the internet and it is a cool experiment to have worked on.</p>
           </div>
         </div>
 

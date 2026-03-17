@@ -56,7 +56,9 @@
         <div class="note-block">
           <div class="note-label note-label-green">What went well</div>
           <div class="note-text">
-            <p>Write your notes here.</p>
+            <p>This was my minigame contribution to a larger two-player collection built as a group assignment in Godot. I finished my piece early enough to spend the remaining time helping teammates with theirs, which I'm glad I had room to do.</p>
+            <p>The design philosophy was deliberate simplicity — variety through physics and spawn rate rather than new systems. The ice stage is slippery, the lava stage increases obstacle frequency, and that's enough to make each feel different without building anything complicated. Everything visual is repurposed: stock photo islands, layered scrolling textures at different opacities for water and lava, Kirby sprites with emoji faces on top. Walking is just rocking the sprite side to side. The jump animation swaps the standing sprite for a jumping one while slightly scaling up, which gives a convincing illusion of air without any real animation work.</p>
+            <p>The biggest quality-of-life win was replacing the placeholder purple octagons with actual images of taxes. It made the game immediately funnier and more memorable without touching a single line of gameplay code.</p>
           </div>
         </div>
 
@@ -65,16 +67,18 @@
         <div class="note-block">
           <div class="note-label note-label-blue">What I learned</div>
           <div class="note-text">
-            <p>Write your notes here.</p>
+            <p>Scope discipline matters more than raw feature count. The game feels complete and polished within its constraints because I defined a clear ceiling early and worked inside it rather than constantly reaching past it. A lot of student game projects feel unfinished because the scope expanded past what the timeline allowed — this one doesn't, and that's a deliberate choice rather than an accident.</p>
+            <p>Presentation is disproportionately impactful for the effort involved. The Kirby-with-emoji-face characters took almost no time but are the first thing anyone comments on. The tax obstacle swap was maybe an hour of work and made the game go from a generic dodge game to something with a personality. Small creative decisions at the surface level can do a lot of heavy lifting.</p>
           </div>
         </div>
 
         <div class="note-divider"></div>
 
         <div class="note-block">
-          <div class="note-label note-label-red">Mistakes & what I'd do differently</div>
+          <div class="note-label note-label-red">Mistakes &amp; what I'd do differently</div>
           <div class="note-text">
-            <p>Write your notes here.</p>
+            <p>The game has no persistence. There's no way to track best times per stage per character or compare scores between sessions. Adding a leaderboard saved to browser cache would give players a reason to come back and compete against themselves or each other — right now the only stakes are in the moment.</p>
+            <p>Sound is the other gap, and honestly the one I'm least confident about. It's easy to add sounds that are worse than silence — audio that loops awkwardly, effects that get grating after ten seconds, music that makes players reach for the mute button. I'd rather ship no audio than bad audio, but the game would be noticeably better with good audio. That's a skill I'd like to get better at, partly so I stop using the deadline as an excuse to skip it.</p>
           </div>
         </div>
 
@@ -82,29 +86,6 @@
     </div>
   </div>
 
-  <div class="project-nav-row">
-    <span class="project-nav-label">Other Projects</span>
-    <a href="../TowerDefense/index.html" class="proj-mini-card">
-      <div class="mini-thumb" style="background:rgba(255,107,107,0.1)">🗼</div>
-      <div><div class="mini-name">Tower Defense</div><div class="mini-lang">Java · Applet</div></div>
-    </a>
-    <a href="../phaser-tank-game/index.html" class="proj-mini-card">
-      <div class="mini-thumb" style="background:rgba(91,200,255,0.1)">🚀</div>
-      <div><div class="mini-name">Tank Game</div><div class="mini-lang">JavaScript · Phaser.js</div></div>
-    </a>
-    <a href="../Vulcans_bad_suit_v1.i/index.html" class="proj-mini-card">
-      <div class="mini-thumb" style="background:rgba(200,150,255,0.1)">💣</div>
-      <div><div class="mini-name">Vulcan's Suit</div><div class="mini-lang">GameMaker</div></div>
-    </a>
-    <a href="../grass-webgl-shader/index.html" class="proj-mini-card">
-      <div class="mini-thumb" style="background:rgba(127,255,106,0.1)">🌿</div>
-      <div><div class="mini-name">Grass Shader</div><div class="mini-lang">WebGL · GLSL</div></div>
-    </a>
-    <a href="../react-app-deck-investigator/index.html" class="proj-mini-card">
-      <div class="mini-thumb" style="background:rgba(255,200,50,0.1)">🃏</div>
-      <div><div class="mini-name">Deck Investigator</div><div class="mini-lang">React · TypeScript</div></div>
-    </a>
-  </div>
 
 </body>
 </html>

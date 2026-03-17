@@ -188,22 +188,13 @@ function generateGrassStrip3D(params, worldOffsetX = 0, worldOffsetZ = 0, segmen
     const maxCells   = hilbertRes * hilbertRes;
     const cellW      = patchWidth  / gridRes;
     const cellD      = patchDepth  / gridRes;
-    const bw         = baseWidth;
 
-    const vertices = [];
-
-    // Stitch state — we need the first vertex of the current blade to connect
-    // the degenerate strip from the previous blade. Stored as a flat 6-element
-    // tuple [px, py, pz, bx, bz, t] matching the vertex layout.
-    let prevBladeFirstLeft  = null;
-    let prevBladeFirstRight = null;
-    let prevBladeLast       = null;
+    const occupied = [];
 
     for (let d = 0; d < maxCells; d++) {
         const { x: gx, y: gz } = hilbertD2xy(hilbertRes, d);
         if (gx >= gridRes || gz >= gridRes) continue;
 
-        // ── Patchiness rejection (was pass 1) ──────────────────────────────
         const wx  = worldOffsetX + (gx + 0.5) * cellW - patchWidth  * 0.5;
         const wz  = worldOffsetZ + (gz + 0.5) * cellD - patchDepth  * 0.5;
         const n01 = (smoothNoise2(wx * noiseScale, wz * noiseScale) + 1.0) * 0.5;
@@ -211,40 +202,44 @@ function generateGrassStrip3D(params, worldOffsetX = 0, worldOffsetZ = 0, segmen
         const acceptance = densityBias + shaped * p;
         if (Math.random() > acceptance) continue;
 
-        // ── Blade properties (was pass 2) ──────────────────────────────────
-        const baseX      = wx + (Math.random() - 0.5) * cellW;
-        const baseZ      = wz + (Math.random() - 0.5) * cellD;
-        const baseY      = _getHeight(baseX, baseZ);
-        const height     = baseHeight + Math.random() * heightVariance;
-        const bendAmount = (0.15 + Math.random() * 0.25) * height
-                           * (Math.random() < 0.5 ? 1 : -1);
-        const angle      = Math.random() * Math.PI * 2;
+        occupied.push({ wx, wz });
+    }
 
-        const { up, right, forward } = getBladeBasis(getSurfaceNormal(baseX, baseZ));
+    const blades = occupied.map(({ wx, wz }) => {
+        const bx = wx + (Math.random() - 0.5) * cellW;
+        const bz = wz + (Math.random() - 0.5) * cellD;
+        const by = _getHeight(bx, bz);
+        const h  = baseHeight + Math.random() * heightVariance;
+        return {
+            baseX:      bx,
+            baseY:      by,
+            baseZ:      bz,
+            normal:     getSurfaceNormal(bx, bz),
+            angle:      Math.random() * Math.PI * 2,
+            height:     h,
+            bendAmount: (0.15 + Math.random() * 0.25) * h
+                        * (Math.random() < 0.5 ? 1 : -1),
+        };
+    });
+
+    const vertices = [];
+    const bw       = baseWidth;
+
+    for (let i = 0; i < blades.length; i++) {
+        const blade = blades[i];
+        const { baseX, baseY, baseZ, normal, angle, height, bendAmount } = blade;
+        const { up, right, forward } = getBladeBasis(normal);
         const cosA = Math.cos(angle);
         const sinA = Math.sin(angle);
         const dx   = right[0] * cosA + forward[0] * sinA;
         const dy   = right[1] * cosA + forward[1] * sinA;
         const dz   = right[2] * cosA + forward[2] * sinA;
 
-        // ── Degenerate stitch from previous blade (was the end of pass 3) ──
-        // Computed here using this blade's base so we don't need lookahead.
-        const thisLeft  = [baseX - dx * bw / 2, baseY - dy * bw / 2, baseZ - dz * bw / 2, baseX, baseZ, 0.0];
-        const thisRight = [baseX + dx * bw / 2, baseY + dy * bw / 2, baseZ + dz * bw / 2, baseX, baseZ, 0.0];
-
-        if (prevBladeLast !== null) {
-            vertices.push(...prevBladeLast);
-            vertices.push(...thisLeft);
-            vertices.push(...thisLeft);
-            vertices.push(...thisRight);
-        }
-
-        // ── Vertex emission (was pass 3) ────────────────────────────────────
         // Front face (left then right)
         for (let j = 0; j <= segments; j++) {
-            const t     = j / segments;
-            const width = bw * (1.0 - t);
-            const curve = (t * t) * bendAmount;
+            const t      = j / segments;
+            const width  = bw * (1.0 - t);
+            const curve  = (t * t) * bendAmount;
             const px = baseX + up[0] * t * height + forward[0] * curve;
             const py = baseY + up[1] * t * height + forward[1] * curve;
             const pz = baseZ + up[2] * t * height + forward[2] * curve;
@@ -258,14 +253,14 @@ function generateGrassStrip3D(params, worldOffsetX = 0, worldOffsetZ = 0, segmen
             );
         }
 
-        // Back face — degenerate connector then winding-flipped strip
+        // Back face — degenerate connector then same strip with winding flipped
         const lastFront = vertices.slice(-6);
         vertices.push(...lastFront);
 
         for (let j = 0; j <= segments; j++) {
-            const t     = j / segments;
-            const width = bw * (1.0 - t);
-            const curve = (t * t) * bendAmount;
+            const t      = j / segments;
+            const width  = bw * (1.0 - t);
+            const curve  = (t * t) * bendAmount;
             const px = baseX + up[0] * t * height + forward[0] * curve;
             const py = baseY + up[1] * t * height + forward[1] * curve;
             const pz = baseZ + up[2] * t * height + forward[2] * curve;
@@ -279,7 +274,32 @@ function generateGrassStrip3D(params, worldOffsetX = 0, worldOffsetZ = 0, segmen
             );
         }
 
-        prevBladeLast = vertices.slice(-6);
+        if (i < blades.length - 1) {
+            const last   = vertices.slice(-6);
+            const next   = blades[i + 1];
+            const { up: nu, right: nr, forward: nf } = getBladeBasis(next.normal);
+            const cosNA  = Math.cos(next.angle);
+            const sinNA  = Math.sin(next.angle);
+            const ndx    = nr[0] * cosNA + nf[0] * sinNA;
+            const ndy    = nr[1] * cosNA + nf[1] * sinNA;
+            const ndz    = nr[2] * cosNA + nf[2] * sinNA;
+            const left   = [
+                next.baseX - ndx * bw / 2,
+                next.baseY - ndy * bw / 2,
+                next.baseZ - ndz * bw / 2,
+                next.baseX, next.baseZ, 0.0,
+            ];
+            const right2 = [
+                next.baseX + ndx * bw / 2,
+                next.baseY + ndy * bw / 2,
+                next.baseZ + ndz * bw / 2,
+                next.baseX, next.baseZ, 0.0,
+            ];
+            vertices.push(...last);
+            vertices.push(...left);
+            vertices.push(...left);
+            vertices.push(...right2);
+        }
     }
 
     return new Float32Array(vertices);

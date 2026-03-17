@@ -176,10 +176,11 @@ const Legend: React.FC<LegendProps> = ({
 
   const sections: React.ReactNode[] = [];
   let sectionCount = 0;
+  let _skey = 0;  // unique key counter for sections array elements
 
   if (synergyLineEntries.size > 0) {
-    if (sectionCount > 0) sections.push(renderDivider());
-    sections.push(renderSectionLabel("DETECTED"));
+    if (sectionCount > 0) sections.push(<React.Fragment key={`div-${_skey++}`}>{renderDivider()}</React.Fragment>);
+    sections.push(<React.Fragment key={`sec-${_skey++}`}>{renderSectionLabel("DETECTED")}</React.Fragment>);
     synergyLineEntries.forEach((color, label) => {
       const isSolid = synergyConnections.some(c => c.label === label && c.solid);
       sections.push(renderRow(label, color, false, false, true, isSolid));
@@ -188,8 +189,8 @@ const Legend: React.FC<LegendProps> = ({
   }
 
   if (synergyHighlightEntries.size > 0) {
-    if (sectionCount > 0) sections.push(renderDivider());
-    sections.push(renderSectionLabel("ROLES"));
+    if (sectionCount > 0) sections.push(<React.Fragment key={`div-${_skey++}`}>{renderDivider()}</React.Fragment>);
+    sections.push(<React.Fragment key={`sec-${_skey++}`}>{renderSectionLabel("ROLES")}</React.Fragment>);
     synergyHighlightEntries.forEach((color, label) => {
       const isSolid = synergyConnections.some(c => c.label === label && c.solid);
       sections.push(renderRow(label, color, true, false, true, isSolid));
@@ -198,8 +199,8 @@ const Legend: React.FC<LegendProps> = ({
   }
 
   if (manualLineEntries.size > 0) {
-    if (sectionCount > 0) sections.push(renderDivider());
-    sections.push(renderSectionLabel("MANUAL"));
+    if (sectionCount > 0) sections.push(<React.Fragment key={`div-${_skey++}`}>{renderDivider()}</React.Fragment>);
+    sections.push(<React.Fragment key={`sec-${_skey++}`}>{renderSectionLabel("MANUAL")}</React.Fragment>);
     manualLineEntries.forEach((color, label) =>
       sections.push(renderRow(label, color, false, true, false, true))
     );
@@ -207,8 +208,8 @@ const Legend: React.FC<LegendProps> = ({
   }
 
   if (manualHighlightEntries.size > 0) {
-    if (sectionCount > 0) sections.push(renderDivider());
-    sections.push(renderSectionLabel("GROUPS"));
+    if (sectionCount > 0) sections.push(<React.Fragment key={`div-${_skey++}`}>{renderDivider()}</React.Fragment>);
+    sections.push(<React.Fragment key={`sec-${_skey++}`}>{renderSectionLabel("GROUPS")}</React.Fragment>);
     manualHighlightEntries.forEach((color, label) =>
       sections.push(renderRow(label, color, true, true, false, true))
     );
@@ -216,8 +217,8 @@ const Legend: React.FC<LegendProps> = ({
   }
 
   if (ellipses.length > 0) {
-    if (sectionCount > 0) sections.push(renderDivider());
-    sections.push(renderSectionLabel("REGIONS"));
+    if (sectionCount > 0) sections.push(<React.Fragment key={`div-${_skey++}`}>{renderDivider()}</React.Fragment>);
+    sections.push(<React.Fragment key={`sec-${_skey++}`}>{renderSectionLabel("REGIONS")}</React.Fragment>);
     ellipses.forEach(el => {
       const hidden  = hiddenEllipses.has(el.id);
       sections.push(
@@ -261,7 +262,7 @@ const Legend: React.FC<LegendProps> = ({
 
   const editHint = editingLabel && (
     <>
-      {renderDivider()}
+      <React.Fragment key="edit-hint-div">{renderDivider()}</React.Fragment>
       <div style={{
         fontSize: "9px", color: "#88aaff", lineHeight: 1.4,
         padding: "2px 0",

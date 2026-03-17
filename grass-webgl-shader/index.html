@@ -5,6 +5,95 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Grass Shader — nhesla</title>
   <link rel="stylesheet" href="../assets/style.css"/>
+  <style>
+
+    /* ── Techniques section ─────────────────────────────────────────── */
+    .techniques-section {
+      max-width: 960px;
+      margin: 3rem auto 0;
+      padding: 0 1.5rem 4rem;
+    }
+
+    .techniques-heading {
+      display: flex; align-items: center; gap: 12px;
+      margin-bottom: 2rem;
+    }
+    .techniques-heading h2 {
+      margin: 0; font-weight: 800; font-size: .85rem;
+      letter-spacing: .08em; text-transform: uppercase;
+      color: var(--muted); white-space: nowrap;
+    }
+    .techniques-heading .line { flex: 1; height: 1px; background: var(--border); }
+
+    .techniques-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1px;
+      background: var(--border);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    @media (max-width: 700px) {
+      .techniques-grid { grid-template-columns: 1fr; }
+    }
+    @media (min-width: 701px) and (max-width: 960px) {
+      .techniques-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    .tech-card {
+      background: var(--surface, #0d1a0d);
+      padding: 1.4rem 1.5rem 1.6rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+    }
+
+    .tech-card-top {
+      display: flex; align-items: center; gap: 10px;
+      margin-bottom: 0.1rem;
+    }
+
+    .tech-number {
+      font-family: var(--mono);
+      font-size: 0.62rem;
+      color: var(--border);
+      letter-spacing: 0.06em;
+      flex-shrink: 0;
+      padding-top: 2px;
+    }
+
+    .tech-title {
+      font-size: 0.92rem;
+      font-weight: 700;
+      color: var(--text);
+      line-height: 1.2;
+    }
+
+    .tech-tags {
+      display: flex; gap: 5px; flex-wrap: wrap;
+      margin-left: 26px; /* align under title, past the number */
+    }
+
+    .tech-desc {
+      font-size: 0.83rem;
+      color: var(--dim);
+      line-height: 1.65;
+      margin-left: 26px;
+    }
+
+    .tech-detail {
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      color: var(--muted);
+      line-height: 1.6;
+      margin-left: 26px;
+      margin-top: 0.2rem;
+      border-left: 2px solid var(--border);
+      padding-left: 10px;
+    }
+
+  </style>
 </head>
 <body>
 
@@ -44,7 +133,8 @@
         <div class="note-block">
           <div class="note-label note-label-green">What went well</div>
           <div class="note-text">
-            <p>Several rendering optimizations came together well. Grass blades are generated along a Hilbert curve so spatially adjacent blades are also adjacent in memory, which improves cache performance during chunk builds. The chunk system streams geometry in rings around the camera and recycles chunks as the view moves. LOD reduces triangle count with distance, and frustum culling skips off-screen chunks entirely before any draw work happens. The ground shader uses the same noise and color parameters as the grass so the two blend together naturally.</p>
+            <p>The ground shader uses the same noise and color parameters as the grass, so the two blend together naturally without any manual color matching.</p>
+            <p>Several rendering techniques came together well on this one — see the <a href="#how-it-works" style="color:var(--accent);text-decoration:none;border-bottom:1px solid rgba(127,255,106,0.3)">How It Works</a> section below for a full breakdown.</p>
           </div>
         </div>
 
@@ -54,7 +144,7 @@
           <div class="note-label note-label-blue">What I learned</div>
           <div class="note-text">
             <p>Working with GLSL was new territory for me — it's less of a traditional programming language and more of a set of instructions you write directly for the GPU, with its own rules around types, precision, and what data is available at each stage of the pipeline. Being able to describe the techniques I wanted to implement to Claude and have it translate them into working shader code was a huge help. I could focus on understanding what the code was doing and why rather than getting stuck on syntax.</p>
-            <p>The core idea for the project came from a game programming video that showed how you could draw thousands of grass blades in a single draw call by connecting them into one continuous triangle strip using degenerate triangles — zero-area triangles that are invisible but stitch two strips together. I thought that was brilliant and I wanted to try figuring it out myself.</p>
+            <p>The core idea came from a game programming video about drawing thousands of grass blades in a single draw call. I thought it was a brilliant trick and wanted to figure it out myself.</p>
             <p>I also learned that WebGL behavior varies more across GPU vendors than I expected. Something that looked fine on my machine rendered as flickering static on Windows hardware due to differences in how drivers handle back-face rendering. That's the kind of thing you can't catch without testing on different devices.</p>
           </div>
         </div>
@@ -62,13 +152,214 @@
         <div class="note-divider"></div>
 
         <div class="note-block">
-          <div class="note-label note-label-red">Mistakes & what I'd do differently</div>
+          <div class="note-label note-label-red">Mistakes &amp; what I'd do differently</div>
           <div class="note-text">
             <p>Grass geometry is rebuilt on the CPU in JavaScript whenever parameters change, which causes a noticeable hitch on sliders like blade count. The right approach would be GPU-side generation using transform feedback — the CPU would just send parameters and the GPU would generate and buffer its own geometry. I'd also add shadow casting between blades and ambient occlusion at the base, which would make the grass feel grounded rather than floating on the surface.</p>
           </div>
         </div>
 
       </div>
+    </div>
+  </div>
+
+  <!-- ── Techniques ──────────────────────────────────────────────────────── -->
+  <div class="techniques-section">
+    <div class="techniques-heading" id="how-it-works">
+      <h2>How It Works</h2>
+      <div class="line"></div>
+    </div>
+
+    <div class="techniques-grid">
+
+      <div class="tech-card">
+        <div class="tech-card-top">
+          <span class="tech-number">01</span>
+          <span class="tech-title">Single Draw Call via Triangle Strip</span>
+        </div>
+        <div class="tech-tags">
+          <span class="tag tag-green">Rendering</span>
+        </div>
+        <p class="tech-desc">
+          All grass blades — thousands of them — are submitted to the GPU in a single
+          <code>drawArrays(TRIANGLE_STRIP)</code> call. Individual blades are separate strips,
+          but they're stitched end-to-end using degenerate triangles: zero-area triangles
+          formed by repeating a vertex that the GPU clips away as invisible, creating a
+          seamless invisible bridge between blades.
+        </p>
+        <div class="tech-detail">
+          vs. one draw call per blade:<br>
+          draw calls → O(1) instead of O(n)
+        </div>
+      </div>
+
+      <div class="tech-card">
+        <div class="tech-card-top">
+          <span class="tech-number">02</span>
+          <span class="tech-title">Hilbert Curve Memory Layout</span>
+        </div>
+        <div class="tech-tags">
+          <span class="tag tag-green">CPU Performance</span>
+        </div>
+        <p class="tech-desc">
+          Grass blades are generated by walking a Hilbert curve over the patch grid rather
+          than row by row. A Hilbert curve is a space-filling curve that visits every cell
+          while keeping spatially nearby cells close together in the traversal order. This
+          means blades that are near each other in the world end up near each other in the
+          vertex buffer, which improves cache hit rates when the GPU reads geometry during
+          rendering.
+        </p>
+        <div class="tech-detail">
+          locality: adjacent in world ≈ adjacent in memory
+        </div>
+      </div>
+
+      <div class="tech-card">
+        <div class="tech-card-top">
+          <span class="tech-number">03</span>
+          <span class="tech-title">Chunked Streaming</span>
+        </div>
+        <div class="tech-tags">
+          <span class="tag tag-blue">Scene Management</span>
+        </div>
+        <p class="tech-desc">
+          The world is divided into fixed-size chunks arranged in a ring around the camera.
+          As the camera moves, chunks that scroll out of range are recycled and rebuilt at
+          the new leading edge rather than allocated fresh. Dirty chunks are rebuilt one per
+          frame to spread the CPU cost out over time rather than spiking all at once when
+          the view changes.
+        </p>
+        <div class="tech-detail">
+          rebuild cost: amortized 1 chunk/frame<br>
+          memory: fixed pool, no growth
+        </div>
+      </div>
+
+      <div class="tech-card">
+        <div class="tech-card-top">
+          <span class="tech-number">04</span>
+          <span class="tech-title">Level of Detail (LOD)</span>
+        </div>
+        <div class="tech-tags">
+          <span class="tag tag-blue">GPU Performance</span>
+        </div>
+        <p class="tech-desc">
+          Each chunk stores three versions of its geometry at decreasing segment counts
+          (5, 3, and 1 segments per blade). At render time each chunk samples its distance
+          from the camera and binds the appropriate buffer. Distant grass that would look
+          identical at high detail gets drawn with far fewer triangles, freeing up GPU
+          bandwidth for the foreground.
+        </p>
+        <div class="tech-detail">
+          LOD 0 (near):  5 segments/blade<br>
+          LOD 1 (mid):   3 segments/blade<br>
+          LOD 2 (far):   1 segment/blade
+        </div>
+      </div>
+
+      <div class="tech-card">
+        <div class="tech-card-top">
+          <span class="tech-number">05</span>
+          <span class="tech-title">Frustum Culling</span>
+        </div>
+        <div class="tech-tags">
+          <span class="tag tag-blue">GPU Performance</span>
+        </div>
+        <p class="tech-desc">
+          Before submitting any chunk for drawing, its bounding box is tested against the
+          six planes of the camera's view frustum. Chunks outside the frustum are skipped
+          entirely — no buffer bind, no draw call. The frustum planes are extracted from
+          the combined view-projection matrix each frame, so they automatically track
+          camera movement and rotation.
+        </p>
+        <div class="tech-detail">
+          tested: 6 planes × AABB per chunk<br>
+          result: ~50% cull rate at typical FOV
+        </div>
+      </div>
+
+      <div class="tech-card">
+        <div class="tech-card-top">
+          <span class="tech-number">06</span>
+          <span class="tech-title">Vertex Shader Wind</span>
+        </div>
+        <div class="tech-tags">
+          <span class="tag tag-green">GLSL</span>
+        </div>
+        <p class="tech-desc">
+          Wind is computed entirely on the GPU in the vertex shader — no CPU involvement
+          per frame. Each vertex is displaced by a sine wave that factors in world position,
+          time, and a <code>bladeT</code> value (0 at base, 1 at tip) so the base stays
+          anchored and the tip sways freely. A second turbulence term at a different
+          frequency adds irregularity so blades don't all move in perfect lockstep.
+        </p>
+        <div class="tech-detail">
+          displacement: sin(pos·dir + time·speed) × intensity × bladeT
+        </div>
+      </div>
+
+      <div class="tech-card">
+        <div class="tech-card-top">
+          <span class="tech-number">07</span>
+          <span class="tech-title">Per-Blade Color Variation</span>
+        </div>
+        <div class="tech-tags">
+          <span class="tag tag-green">GLSL</span>
+        </div>
+        <p class="tech-desc">
+          Each blade gets its own hue and brightness offset computed in the fragment shader
+          from a hash of its base world position. No texture lookups, no extra uniforms —
+          the hash turns the (x, z) base coordinate into a stable pseudo-random value that's
+          consistent across frames. Hue variance and brightness variance are exposed as
+          uniforms so the controls panel can tune how much color diversity the field has.
+        </p>
+        <div class="tech-detail">
+          hash input: blade base (x, z)<br>
+          output: hue offset, lightness offset
+        </div>
+      </div>
+
+      <div class="tech-card">
+        <div class="tech-card-top">
+          <span class="tech-number">08</span>
+          <span class="tech-title">Patchiness via Noise Density</span>
+        </div>
+        <div class="tech-tags">
+          <span class="tag tag-green">Procedural</span>
+        </div>
+        <p class="tech-desc">
+          Rather than placing blades uniformly, each candidate cell is evaluated against
+          a smooth noise field. The patchiness parameter sharpens the noise curve, biasing
+          placement toward high-density clusters with bare patches between them. At zero
+          patchiness the distribution is uniform; at maximum it produces tight clumps
+          separated by open ground — useful for seaweed and fur presets.
+        </p>
+        <div class="tech-detail">
+          acceptance = densityBias + pow(noise, sharpness) × p
+        </div>
+      </div>
+
+      <div class="tech-card">
+        <div class="tech-card-top">
+          <span class="tech-number">09</span>
+          <span class="tech-title">Surface-Normal Blade Alignment</span>
+        </div>
+        <div class="tech-tags">
+          <span class="tag tag-green">Procedural</span>
+        </div>
+        <p class="tech-desc">
+          Each blade is oriented to grow perpendicular to the terrain surface rather than
+          straight up in world space. A surface normal is sampled at the blade's base by
+          finite differencing the heightmap in four directions. That normal is used to
+          build a local coordinate frame (up, right, forward) which rotates the blade's
+          geometry to match the slope, so blades on hills lean naturally with the terrain
+          rather than clipping through it.
+        </p>
+        <div class="tech-detail">
+          normal ← finite diff of heightmap<br>
+          basis ← Gram-Schmidt orthogonalize
+        </div>
+      </div>
+
     </div>
   </div>
 

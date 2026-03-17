@@ -23,11 +23,23 @@
       display: block;
     }
     .notes-col {
+      width: 380px;
+      flex-shrink: 0;
       transition: width 0.3s ease, opacity 0.3s ease;
+      border-left: 1px solid var(--border);
+      background: var(--surface);
+      display: flex;
+      flex-direction: column;
+      height: calc(100vh - 120px);
+      overflow: hidden;
+    }
+    .notes-col .notes-body {
+      flex: 1;
+      overflow-y: auto;
     }
     .notes-col.collapsed {
       width: 0 !important;
-      overflow: hidden;
+      border-left: none;
       opacity: 0;
       pointer-events: none;
     }
@@ -83,7 +95,8 @@
         <div class="note-block">
           <div class="note-label note-label-green">What went well</div>
           <div class="note-text">
-            <p>Write your notes here.</p>
+            <p>The puzzle generation approach works well. Puzzles are built by working backwards from a randomly chosen target — the target is repeatedly split into two operands until we have the right number of boogers. Every puzzle is guaranteed to be solvable by construction, with no rejection loops.</p>
+            <p>Complexity scales naturally with booger count — each additional booger multiplies the number of possible merge sequences factorially, so adding one or two boogers per difficulty tier was enough to make a meaningful jump in challenge without touching anything else.</p>
           </div>
         </div>
 
@@ -92,7 +105,9 @@
         <div class="note-block">
           <div class="note-label note-label-blue">What I learned</div>
           <div class="note-text">
-            <p>Write your notes here.</p>
+            <p>This started as a Game Maker school project. Rebuilding it in JavaScript gave me a cleaner foundation to iterate on, but the more useful lessons came from playtesting the design.</p>
+            <p>My first version included exponents and nth-root boogers — complete with imaginary number results when taking the square root of a negative. I thought that added depth, but playtesting showed it mostly added confusion. Those operators didn't open up interesting new decisions; they just made the puzzles feel arbitrary. Cutting them made the game tighter without making it easier.</p>
+            <p>The broader lesson: difficulty in a puzzle game comes from the combinatorics of the decision space, not from the complexity of individual operations. Simple rules with enough pieces tends to be more interesting than complicated rules with fewer.</p>
           </div>
         </div>
 
@@ -101,7 +116,8 @@
         <div class="note-block">
           <div class="note-label note-label-red">Mistakes &amp; what I'd do differently</div>
           <div class="note-text">
-            <p>Write your notes here.</p>
+            <p>The biggest thing I'd add is a daily puzzle system. Right now players can generate puzzles indefinitely, get their fill, and have no reason to come back. A daily puzzle would give the awards counter more meaning — instead of just tracking total solves, it would reflect how many days in a row you've shown up. A catch-up menu showing the last several days of puzzles would let new players get up to speed and give returning players something to do if they miss a day.</p>
+            <p>I've thought about adding a timer or limiting undos but I'm not sure either would improve the experience. A timer would reward fast guessing over careful thinking, which runs against what makes the puzzles interesting. Limiting undos might feel punishing in a way that robs players of the satisfaction of finally cracking a hard puzzle. The challenge already comes from the number of boogers — I don't think artificial pressure on top of that adds much.</p>
           </div>
         </div>
 

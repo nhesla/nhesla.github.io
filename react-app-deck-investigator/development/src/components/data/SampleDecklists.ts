@@ -210,62 +210,72 @@ export const SAMPLE_DECKS: SampleDeck[] = [
   },
 
   // ── Lorcana ───────────────────────────────────────────────────────────────
+  // User-provided two-color, 60-card lists.
 
   {
-    name: "Amber Amethyst Aggro",
+    name: "Steel Sapphire Darkwing Duckectives",
     game: "LOR",
-    list: `4x Simba - Rightful Heir
-4x Moana - Of Motunui
-4x Goofy - Musketeer
-4x Hercules - Hero in Training
-4x Maui - Hero to All
-3x Elsa - Snow Queen
-3x Mickey Mouse - Brave Little Tailor
-3x Rapunzel - Gifted with Healing
-2x Cinderella - Stouthearted
-2x Belle - Strange but Special
-4x Be Our Guest
-4x Hakuna Matata
-3x Grab Your Sword
-3x Friends on the Other Side`,
-  },
-
-  {
-    name: "Steel Ruby Control",
-    game: "LOR",
-    list: `4x Maleficent - Monstrous Dragon
-4x Gaston - Arrogant Hunter
-4x The Queen - Wicked and Vain
-3x Hades - King of Olympus
-3x Scar - Mastermind
-3x Ursula - Sea Witch Queen
-2x Cruella De Vil - Miserable as Usual
-2x Jafar - Wicked Sorcerer
-4x Be Prepared
-4x Smash
-4x Fire the Cannons
-3x Let the Storm Rage On
-3x Dragon Fire
-2x Grab Your Sword`,
-  },
-
-  {
-    name: "Emerald Ruby Ramp",
-    game: "LOR",
-    list: `4x Elsa - Spirit of Winter
-4x Moana - Wayfinder
-4x Stitch - Carefree Surfer
-4x Tinker Bell - Giant Fairy
-3x Merlin - Rabbit
-3x Maui - Demigod
-3x Kristoff - Official Ice Master
-2x Olaf - Friendly Snowman
-2x Genie - On the Job
+    list: `4x Darkwing Duck - Crime Fighter
+4x Darkwing Duck - Drake Mallard
+3x Mickey Mouse - Detective
+3x Donald Duck - Along for the Ride
+4x Judy Hopps - Lead Detective
+4x Nick Wilde - Sly Fox Sleuth
+4x Doc - Bold Knight
+4x Judy Hopps - Uncovering Clues
+4x Nick Wilde - Persistent Investigator
+4x Darkwing Duck - Cool Under Pressure
+4x Sail The Azurite Sea
+4x The Terror That Flaps in the Night
+4x Strength of a Raging Fire
 4x Let It Go
-4x Develop Your Brain
-3x Grab Your Sword
-3x You Have Forgotten Me
-2x Be Our Guest`,
+3x Inkrunner
+3x The Thunderquack`,
+  },
+
+  {
+    name: "Amber Steel Lilo and Steel",
+    game: "LOR",
+    list: `4x Lilo - Snow Artist
+4x Lilo - Escape Artist
+4x Doc - Bold Knight
+4x Lady - Family Dog
+4x Lilo - Best Explorer Ever
+4x Stitch - Carefree Snowboarder
+4x Angel - Siren Singer
+4x Pudge - Controls the Weather
+4x Lilo - Bundled Up
+4x Pleakley - Arctic Naturalist
+4x Stitch - Alien Troublemaker
+4x Lilo - Rock Star
+4x Akood et Emuti
+2x He Hurled His Thunderbolt
+4x Strength of a Raging Fire
+2x Lantern`,
+  },
+
+  {
+    // Note: original list was 61 cards — reduced Vixey - Forest Friend from 4x to 3x
+    name: "Emerald Ruby Mulan Combo",
+    game: "LOR",
+    list: `4x Clarabelle - Clumsy Guest
+4x Minnie Mouse - Spinning Skater
+2x Ursula - Deceiver
+3x Vixey - Forest Friend
+3x Slushy - Glacial Guster
+4x Clarabelle - Light on Her Hooves
+4x Tod - All Alone
+4x Mulan - Resourceful Recruit
+3x Clarabelle - Contented Wallflower
+4x Donald Duck - Perfect Gentleman
+3x The Headless Horseman - Terror of Sleepy Hollow
+3x Tod - Knows All the Tricks
+2x You Came Back
+3x Force of a Great Typhoon
+4x You're Welcome
+3x Grab Your Bow
+3x Education or Elimination
+4x Marching Off to Battle`,
   },
 
 ];

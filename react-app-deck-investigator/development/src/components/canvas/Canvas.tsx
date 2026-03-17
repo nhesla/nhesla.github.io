@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect } from "react";
 import { Card } from "../data/CardImporter";
 import { SynergyConnection, SynergyDirection, SYNERGY_COLORS } from "../data/SynergyEngine";
 import {
@@ -13,7 +13,7 @@ import {
   getMostCommonFrom,
   cardIsInLabelGroup,
 } from "../data/ManualConnection";
-import { runForceLayout, Position } from "./ForceLayout";
+import { Position } from "./ForceLayout";
 import { useBoxSelect } from "./useBoxSelect";
 import SynergyLines from "./SynergyLines";
 import CardToken from "./CardToken";
@@ -72,13 +72,18 @@ const Canvas: React.FC<CanvasProps> = ({
 
   // ── Layout ──────────────────────────────────────────────────────────────────
 
-  const runLayout = useCallback(() => {
+  // Layout is driven by Comp_Manager on import (role-seeded positions).
+  // runLayout here is only for the manual ↺ Re-layout button.
+  const runLayout = () => {
     if (!cards) return;
-    const positions = runForceLayout(cards, synergyConnections, LEGEND_MARGIN);
-    onPositionMapChange(positions);
-  }, [cards, synergyConnections]);
-
-  useEffect(() => { if (cards) runLayout(); }, [cards]);
+    import("../data/SynergyEngine").then(({ buildRoleMap }) => {
+      import("./ForceLayout").then(({ runForceLayout }) => {
+        const roleMap   = buildRoleMap(cards);
+        const positions = runForceLayout(cards, synergyConnections, LEGEND_MARGIN, roleMap);
+        onPositionMapChange(positions);
+      });
+    });
+  };
 
   const updateCardPosition = (cardname: string, x: number, y: number) => {
     onPositionMapChange({ ...positionMap, [cardname]: { x, y } });
