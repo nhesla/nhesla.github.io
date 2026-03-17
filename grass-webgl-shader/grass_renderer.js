@@ -80,8 +80,6 @@ void main()
     gl_Position = project * view * model * vec4(finalPos, 1.0);
 }`;
 
-// FIX: highp throughout; portable float-only hash (no sin, no floatBitsToUint).
-// FIX: tip shape smoothstep direction corrected — fades out at tip, not base.
 const grassFragSrc = `#version 300 es
 precision highp float;
 
@@ -107,12 +105,8 @@ vec3 hslToRgb(float h, float s, float l) {
     return vec3(r, g, b);
 }
 
-// Schechter-Bridson hash — pure highp float arithmetic, no sin(), no bitcast.
-// Consistent across ANGLE/D3D, Metal, and desktop GL drivers.
 float posRand(vec2 pos) {
-    vec3 p3 = fract(vec3(pos.xyx) * vec3(443.8975, 397.2973, 491.1871));
-    p3 += dot(p3, p3.yzx + 19.19);
-    return fract((p3.x + p3.y) * p3.z);
+    return fract(sin(dot(pos, vec2(127.1, 311.7))) * 43758.5453);
 }
 
 void main() {
@@ -122,8 +116,6 @@ void main() {
     float bladeHue = mod(hue + (rand2 - 0.5) * hueVariance, 360.0);
     float bladeLit = clamp(brightness * 100.0 + (rand - 0.5) * variance, 5.0, 50.0);
 
-    // Per-blade taper: alpha goes 1→0 between tipThreshold and tipThreshold+0.18.
-    // Each blade gets a different cutoff so tips look naturally irregular.
     float tipThreshold = 0.55 + rand * 0.35;
     float alpha = 1.0 - smoothstep(tipThreshold, tipThreshold + 0.18, vBladeT);
 
@@ -167,7 +159,11 @@ function getBladeBasis(normal) {
 // ── GRASS GENERATION ───────────────────────────────────────────────────────
 const LOD_SEGMENTS = [5, 3, 1];
 
-function generateGrassStrip3D(params, worldOffsetX = 0, worldOffsetZ = 0, segments = 5) {
+// backFace: when true, emits a winding-flipped duplicate of each blade so both
+// sides are visible even when gl.CULL_FACE is enabled (needed on Mac/Metal).
+// When false, only the front strip is emitted and the caller disables culling
+// instead — avoids Z-fighting on ANGLE/D3D (Windows Chrome).
+function generateGrassStrip3D(params, worldOffsetX = 0, worldOffsetZ = 0, segments = 5, backFace = false) {
     const {
         bladeCount,
         patchWidth     = 5,
@@ -192,18 +188,13 @@ function generateGrassStrip3D(params, worldOffsetX = 0, worldOffsetZ = 0, segmen
 
     const vertices = [];
 
-    // Stitch state — we need the first vertex of the current blade to connect
-    // the degenerate strip from the previous blade. Stored as a flat 6-element
-    // tuple [px, py, pz, bx, bz, t] matching the vertex layout.
-    let prevBladeFirstLeft  = null;
-    let prevBladeFirstRight = null;
-    let prevBladeLast       = null;
+    let prevBladeLast = null;
 
     for (let d = 0; d < maxCells; d++) {
         const { x: gx, y: gz } = hilbertD2xy(hilbertRes, d);
         if (gx >= gridRes || gz >= gridRes) continue;
 
-        // ── Patchiness rejection (was pass 1) ──────────────────────────────
+        // ── Patchiness rejection ───────────────────────────────────────────
         const wx  = worldOffsetX + (gx + 0.5) * cellW - patchWidth  * 0.5;
         const wz  = worldOffsetZ + (gz + 0.5) * cellD - patchDepth  * 0.5;
         const n01 = (smoothNoise2(wx * noiseScale, wz * noiseScale) + 1.0) * 0.5;
@@ -211,7 +202,7 @@ function generateGrassStrip3D(params, worldOffsetX = 0, worldOffsetZ = 0, segmen
         const acceptance = densityBias + shaped * p;
         if (Math.random() > acceptance) continue;
 
-        // ── Blade properties (was pass 2) ──────────────────────────────────
+        // ── Blade properties ───────────────────────────────────────────────
         const baseX      = wx + (Math.random() - 0.5) * cellW;
         const baseZ      = wz + (Math.random() - 0.5) * cellD;
         const baseY      = _getHeight(baseX, baseZ);
@@ -227,8 +218,7 @@ function generateGrassStrip3D(params, worldOffsetX = 0, worldOffsetZ = 0, segmen
         const dy   = right[1] * cosA + forward[1] * sinA;
         const dz   = right[2] * cosA + forward[2] * sinA;
 
-        // ── Degenerate stitch from previous blade (was the end of pass 3) ──
-        // Computed here using this blade's base so we don't need lookahead.
+        // ── Degenerate stitch from previous blade ──────────────────────────
         const thisLeft  = [baseX - dx * bw / 2, baseY - dy * bw / 2, baseZ - dz * bw / 2, baseX, baseZ, 0.0];
         const thisRight = [baseX + dx * bw / 2, baseY + dy * bw / 2, baseZ + dz * bw / 2, baseX, baseZ, 0.0];
 
@@ -239,8 +229,7 @@ function generateGrassStrip3D(params, worldOffsetX = 0, worldOffsetZ = 0, segmen
             vertices.push(...thisRight);
         }
 
-        // ── Vertex emission (was pass 3) ────────────────────────────────────
-        // Front face (left then right)
+        // ── Front face ─────────────────────────────────────────────────────
         for (let j = 0; j <= segments; j++) {
             const t     = j / segments;
             const width = bw * (1.0 - t);
@@ -254,46 +243,64 @@ function generateGrassStrip3D(params, worldOffsetX = 0, worldOffsetZ = 0, segmen
             );
             vertices.push(
                 px + dx * width / 2, py + dy * width / 2, pz + dz * width / 2,
-                baseX, baseZ, t
-            );
-        }
-
-        // Back face — degenerate connector then winding-flipped strip
-        const lastFront = vertices.slice(-6);
-        vertices.push(...lastFront);
-
-        for (let j = 0; j <= segments; j++) {
-            const t     = j / segments;
-            const width = bw * (1.0 - t);
-            const curve = (t * t) * bendAmount;
-            const px = baseX + up[0] * t * height + forward[0] * curve;
-            const py = baseY + up[1] * t * height + forward[1] * curve;
-            const pz = baseZ + up[2] * t * height + forward[2] * curve;
-            vertices.push(
-                px + dx * width / 2, py + dy * width / 2, pz + dz * width / 2,
-                baseX, baseZ, t
-            );
-            vertices.push(
-                px - dx * width / 2, py - dy * width / 2, pz - dz * width / 2,
                 baseX, baseZ, t
             );
         }
 
         prevBladeLast = vertices.slice(-6);
+
+        // ── Back face (Mac/Metal only) ─────────────────────────────────────
+        // Winding-flipped duplicate so blades are visible from both sides
+        // without relying on gl.CULL_FACE being disabled.
+        if (backFace) {
+            const lastFront = vertices.slice(-6);
+            vertices.push(...lastFront);
+
+            for (let j = 0; j <= segments; j++) {
+                const t     = j / segments;
+                const width = bw * (1.0 - t);
+                const curve = (t * t) * bendAmount;
+                const px = baseX + up[0] * t * height + forward[0] * curve;
+                const py = baseY + up[1] * t * height + forward[1] * curve;
+                const pz = baseZ + up[2] * t * height + forward[2] * curve;
+                vertices.push(
+                    px + dx * width / 2, py + dy * width / 2, pz + dz * width / 2,
+                    baseX, baseZ, t
+                );
+                vertices.push(
+                    px - dx * width / 2, py - dy * width / 2, pz - dz * width / 2,
+                    baseX, baseZ, t
+                );
+            }
+        }
     }
 
     return new Float32Array(vertices);
+}
+
+// ── PLATFORM DETECTION ─────────────────────────────────────────────────────
+// Returns true if we should emit back-face geometry (Mac/Metal),
+// false if we should disable culling instead (Windows/ANGLE/D3D).
+function detectNeedsBackFace(gl) {
+    const ext = gl.getExtension('WEBGL_debug_renderer_info');
+    if (!ext) return true; // safe default: back-face geometry works everywhere
+    const renderer = gl.getParameter(ext.UNMASKED_RENDERER_WEBGL);
+    const isANGLE  = /ANGLE|Direct3D/i.test(renderer);
+    // On ANGLE/D3D, skip back-face geometry and disable culling to avoid Z-fighting.
+    // On Metal/Mac and everything else, emit back-face geometry.
+    return !isANGLE;
 }
 
 // ── CHUNK MANAGER ──────────────────────────────────────────────────────────
 const CHUNK_SIZE = 5;
 
 class ChunkManager {
-    constructor(gl, rings) {
-        this.gl     = gl;
-        this.rings  = rings;
-        this.grid   = 2 * rings + 1;
-        this.chunks = [];
+    constructor(gl, rings, backFace) {
+        this.gl       = gl;
+        this.rings    = rings;
+        this.backFace = backFace;
+        this.grid     = 2 * rings + 1;
+        this.chunks   = [];
         this._initChunks();
     }
 
@@ -371,7 +378,8 @@ class ChunkManager {
                 chunkParams,
                 chunk.worldX,
                 chunk.worldZ,
-                LOD_SEGMENTS[lod]
+                LOD_SEGMENTS[lod],
+                this.backFace
             );
             chunk.vertCount[lod] = verts.length / 6;
 
@@ -506,6 +514,7 @@ let _gl          = null;
 let grassProgram = null;
 let chunkManager = null;
 let loc          = {};
+let _backFace    = true; // set during init() via platform detection
 
 function buildGrassProgram(gl, vertSrc, fragSrc) {
     function compile(type, src) {
@@ -529,6 +538,7 @@ function buildGrassProgram(gl, vertSrc, fragSrc) {
 function init(gl, getHeightFn) {
     _gl        = gl;
     _getHeight = getHeightFn;
+    _backFace  = detectNeedsBackFace(gl);
 
     grassProgram = buildGrassProgram(gl, grassVertSrc, grassFragSrc);
 
@@ -550,22 +560,18 @@ function init(gl, getHeightFn) {
         hueVariance: gl.getUniformLocation(grassProgram, 'hueVariance'),
     };
 
-    chunkManager = new ChunkManager(gl, params.viewDistance);
+    chunkManager = new ChunkManager(gl, params.viewDistance, _backFace);
     chunkManager.reset(0, 0);
     chunkManager.rebuildAll(params);
 }
 
 function rebuildGrass() {
     if (!_gl || !chunkManager) return;
-    chunkManager = new ChunkManager(_gl, params.viewDistance);
+    chunkManager = new ChunkManager(_gl, params.viewDistance, _backFace);
     chunkManager.reset(0, 0);
     chunkManager.rebuildAll(params);
 }
 
-// FIX: caller must enable gl.BLEND before calling draw(), e.g.:
-//   gl.enable(gl.BLEND);
-//   gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-// This replaces the old hard discard-based tip transparency.
 function draw(viewMatrix, projMatrix, camX = 0, camZ = 0) {
     const gl   = _gl;
     const time = performance.now() * 0.001;
@@ -576,6 +582,17 @@ function draw(viewMatrix, projMatrix, camX = 0, camZ = 0) {
     gl.useProgram(grassProgram);
     gl.uniformMatrix4fv(loc.view,    false, viewMatrix);
     gl.uniformMatrix4fv(loc.project, false, projMatrix);
+
+    gl.enable(gl.BLEND);
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+
+    if (_backFace) {
+        // Mac/Metal: back-face geometry is baked in, culling can stay enabled
+        gl.enable(gl.CULL_FACE);
+    } else {
+        // Windows/ANGLE: single-sided geometry, disable culling so both sides show
+        gl.disable(gl.CULL_FACE);
+    }
 
     chunkManager.draw(gl, loc, viewMatrix, projMatrix, params, camX, camZ, time);
 }
