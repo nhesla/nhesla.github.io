@@ -137,7 +137,7 @@ function randIntNonZero(mn, mx) {
   return v;
 }
 
-function generatePuzzle(diff) {
+/*function generatePuzzle(diff) {
   var cfg = DIFF[diff];
 
   // Pick a random target in range, avoiding 0/1/-1.
@@ -260,7 +260,180 @@ function generatePuzzle(diff) {
   });
 
   return {target: fv(tgt), pool: pool};
+}*/
+// ── Difficulty config ─────────────────────────────────────────────
+var DIFF = {
+  easy:   {count:3, addMax:6, useMul:true, mulMax:4, useDiv:false, targetMin:2,  targetMax:30},
+  medium: {count:4, addMax:9, useMul:true, mulMax:5, useDiv:false, targetMin:10, targetMax:50},
+  hard:   {count:5, addMax:9, useMul:true, mulMax:6, useDiv:true,  targetMin:20, targetMax:100},
+};
+
+// ── Puzzle generation (backwards from target) ─────────────────────
+//
+// Two-phase approach that hard-guarantees operator mix:
+//
+// Phase 1 — Mandatory splits: force exactly one mul/div split and one
+//   add/sub split to happen before anything else. This cannot be
+//   overridden by fallbacks. If either mandatory split fails on the
+//   current values list, we repick the target and start over (cheaply,
+//   without recursing the whole function).
+//
+// Phase 2 — Free splits: fill remaining slots with random splits of
+//   either type, with a mild preference for variety.
+//
+// After all splits, a final hard check verifies that the booger ops
+// (the operators pushed during each split) contain at least one mul/div
+// AND at least one add. No silent erosion possible.
+
+function generatePuzzle(diff) {
+  var cfg = DIFF[diff];
+
+  // ── Split helpers ────────────────────────────────────────────────
+  function mulSplitsFor(val) {
+    var splits = [];
+    if (!cfg.useMul) return splits;
+    for (var n = 2; n <= cfg.mulMax; n++) {
+      if (val % n === 0) {
+        var rem = val / n;
+        if (rem !== 0 && rem !== 1 && rem !== -1) {
+          splits.push({op:'*', n:n, remainder:rem});
+          if (-rem !== 0 && -rem !== 1 && -rem !== -1)
+            splits.push({op:'*', n:-n, remainder:-rem});
+        }
+      }
+    }
+    return splits;
+  }
+
+  function divSplitsFor(val) {
+    var splits = [];
+    if (!cfg.useDiv) return splits;
+    for (var n = 2; n <= 4; n++) {
+      var rem = val * n;
+      if (Math.abs(rem) <= cfg.targetMax * cfg.mulMax && rem !== 0 && rem !== 1 && rem !== -1)
+        splits.push({op:'/', n:n, remainder:rem});
+    }
+    return splits;
+  }
+
+  function addSplitsFor(val) {
+    var splits = [];
+    var addRange = Math.min(cfg.addMax, Math.abs(val) - 1);
+    if (addRange < 2) return splits;
+    for (var trial = 0; trial < 12; trial++) {
+      var n = randInt(2, addRange);
+      if (Math.random() < 0.4) n = -n;
+      var remainder = val - n;
+      if (remainder !== 0 && remainder !== 1 && remainder !== -1)
+        splits.push({op:'+', n:n, remainder:remainder});
+    }
+    return splits;
+  }
+
+  function mulDivSplitsFor(val) {
+    return mulSplitsFor(val).concat(divSplitsFor(val));
+  }
+
+  function isMulSplittable(val) { return mulDivSplitsFor(val).length > 0; }
+
+  // ── Apply a split to values/ops arrays in place ──────────────────
+  // The value at idx becomes the remainder (a plain + accumulator).
+  // The split-off booger op/number is pushed to the end.
+  function applySplit(values, ops, idx, split) {
+    values[idx] = split.remainder;
+    ops[idx]    = '+';        // remainder slot is always a plain accumulator
+    values.push(split.n);
+    ops.push(split.op);       // this is the real booger operator
+  }
+
+  function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+  function shuffle(arr) {
+    for (var i = arr.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var t = arr[i]; arr[i] = arr[j]; arr[j] = t;
+    }
+    return arr;
+  }
+
+  // ── Main loop — retry on bad targets, not full recursion ─────────
+  var MAX_TARGET_TRIES = 100;
+
+  for (var attempt = 0; attempt < MAX_TARGET_TRIES; attempt++) {
+
+    // Pick target
+    var tgt = randInt(cfg.targetMin, cfg.targetMax);
+    if (diff !== 'easy' && Math.random() < 0.2) tgt = -tgt;
+
+    // Phase 1 requires a mul/div split — target must be factorable
+    if (!isMulSplittable(tgt)) continue;
+
+    var values = [tgt];
+    var ops    = ['+'];   // ops[0] is the root slot; ops[1..] are booger ops
+    var failed = false;
+
+    // ── Phase 1a: guaranteed mul/div split ───────────────────────────
+    // values only has [tgt] here, and we already know it's splittable.
+    var ms = mulDivSplitsFor(tgt);
+    applySplit(values, ops, 0, pick(ms));
+    // ops is now ['+', '*'] or ['+', '/'] — one real mul/div booger op confirmed.
+
+    // ── Phase 1b: guaranteed add/sub split ───────────────────────────
+    // Try each value (shuffled) until we find one that yields an add split.
+    var addCandidates = shuffle(values.map(function(_, i) { return i; }));
+    var addDone = false;
+    for (var ci = 0; ci < addCandidates.length && !addDone; ci++) {
+      var aIdx = addCandidates[ci];
+      var aSplits = addSplitsFor(values[aIdx]);
+      if (aSplits.length > 0) {
+        applySplit(values, ops, aIdx, pick(aSplits));
+        addDone = true;
+      }
+    }
+    if (!addDone) { failed = true; }
+
+    if (failed) continue;
+    // ops now has at least one '+' booger op and at least one '*'/'/' booger op.
+
+    // ── Phase 2: free splits to reach cfg.count ───────────────────────
+    var freeAttempts = 0;
+    while (values.length < cfg.count && freeAttempts < 150) {
+      freeAttempts++;
+      var idx = Math.floor(Math.random() * values.length);
+      var val = values[idx];
+      // Alternate preference randomly for variety
+      var splits = Math.random() < 0.5
+        ? mulDivSplitsFor(val).concat(addSplitsFor(val))
+        : addSplitsFor(val).concat(mulDivSplitsFor(val));
+      if (splits.length === 0) continue;
+      applySplit(values, ops, idx, pick(splits));
+    }
+
+    if (values.length < cfg.count) continue;  // phase 2 got stuck; try new target
+
+    // ── Hard guarantee check ──────────────────────────────────────────
+    // ops[0] is always the root accumulator slot (always '+', not a booger).
+    // ops[1..] are the actual booger operators pushed during each split.
+    // Verify the booger ops contain at least one mul/div AND one add.
+    var boogerOps = ops.slice(1);
+    var boogerHasMul = false, boogerHasAdd = false;
+    for (var oi = 0; oi < boogerOps.length; oi++) {
+      if (boogerOps[oi] === '*' || boogerOps[oi] === '/') boogerHasMul = true;
+      if (boogerOps[oi] === '+') boogerHasAdd = true;
+    }
+    if (!boogerHasMul || !boogerHasAdd) continue;  // hard reject — impossible after phase 1, but be safe
+
+    // ── Shuffle output order and return ──────────────────────────────
+    var order = shuffle(values.map(function(_, i) { return i; }));
+    var pool  = order.map(function(i) { return {op: ops[i], num: fv(values[i])}; });
+
+    return {target: fv(tgt), pool: pool};
+  }
+
+  // Only reached if targetMin–targetMax is pathologically small.
+  return generatePuzzle(diff);
 }
+
 
 // ── Booger object ─────────────────────────────────────────────────
 function makeBooger(b, i) {
