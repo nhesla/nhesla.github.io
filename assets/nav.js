@@ -135,13 +135,15 @@ const NAV_PROJECTS = [
     links.className = "nav-project-links";
     links.appendChild(makeDropdown("Interactive", interactive));
     links.appendChild(makeDropdown("Games", games));
-    nav.appendChild(links);
 
-    const challenges = document.createElement("a");
-    challenges.href = prefix + "challenges/index.html";
-    challenges.className = "nav-challenges-link";
-    challenges.textContent = ">_ Challenges";
-    nav.appendChild(challenges);
+    // Challenges as a plain nav pill alongside the dropdowns
+    const chalLink = document.createElement("a");
+    chalLink.href = prefix + "coding_challenges/index.html";
+    chalLink.className = "nav-pill" + (currPath.includes("coding_challenges") ? " active" : "");
+    chalLink.textContent = "Challenges";
+    links.appendChild(chalLink);
+
+    nav.appendChild(links);
 
     navPlaceholder.replaceWith(nav);
   }

@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Coding Challenges — Nikolas Hesla</title>
+  <link rel="stylesheet" href="../assets/style.css"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/base16/tomorrow-night.min.css"/>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/cpp.min.js"></script>
+  <script src="challenges.js"></script>
+  <style>
+    .pg-header {
+      padding: 1.1rem 1.5rem .9rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 1.2rem;
+      flex-wrap: wrap;
+    }
+    .pg-header h1 { font-weight: 800; font-size: 1.35rem; letter-spacing: -.02em; }
+    .pg-meta {
+      font-family: var(--mono);
+      font-size: .62rem;
+      color: var(--muted);
+      letter-spacing: .05em;
+      margin-left: auto;
+    }
+    .pg-retro {
+      padding: .85rem 1.5rem;
+      border-bottom: 1px solid var(--border);
+      font-size: .8rem;
+      line-height: 1.7;
+      color: var(--dim);
+      background: var(--surface);
+    }
+
+    /* ── Three-column shell ── */
+    .challenges-shell {
+      display: grid;
+      grid-template-columns: 200px 1fr 300px;
+      height: calc(100vh - 52px - 56px - 56px);
+      min-height: 500px;
+      overflow: hidden;
+    }
+    @media (max-width: 900px) {
+      .challenges-shell { grid-template-columns: 160px 1fr; height: auto; }
+      .notes-col { display: none; }
+    }
+    @media (max-width: 600px) {
+      .challenges-shell { grid-template-columns: 1fr; height: auto; }
+      .sidebar { display: none; }
+    }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      border-right: 1px solid var(--border);
+      background: var(--surface);
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: var(--border) transparent;
+    }
+    .sidebar-label {
+      font-family: var(--mono);
+      font-size: .58rem;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--muted);
+      padding: .9rem 1rem .6rem;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .sidebar-item {
+      padding: .7rem 1rem;
+      cursor: pointer;
+      border-bottom: 1px solid var(--border);
+      transition: background .12s;
+      display: flex;
+      flex-direction: column;
+      gap: .25rem;
+    }
+    .sidebar-item:hover { background: var(--surface2); }
+    .sidebar-item.active {
+      background: rgba(127,255,106,.05);
+      border-left: 2px solid var(--accent);
+      padding-left: calc(1rem - 2px);
+    }
+    .sidebar-name { font-size: .78rem; font-weight: 700; color: var(--text); line-height: 1.2; }
+    .sidebar-item.active .sidebar-name { color: var(--accent); }
+    .sidebar-lang { font-family: var(--mono); font-size: .55rem; color: var(--muted); letter-spacing: .04em; }
+    .sidebar-top { display: flex; align-items: flex-start; gap: .5rem; }
+    .diff-pip { display: inline-block; width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; margin-top: 4px; }
+    .pip-easy   { background: var(--accent);  }
+    .pip-medium { background: var(--accent4); }
+    .pip-hard   { background: var(--accent3); }
+
+    /* ── Code column ── */
+    .code-col { display: flex; flex-direction: column; overflow: hidden; border-right: 1px solid var(--border); }
+    .code-topbar {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      gap: .75rem;
+      padding: .55rem 1.1rem;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+    }
+    .code-title { font-weight: 800; font-size: .9rem; letter-spacing: -.01em; }
+    .code-body {
+      flex: 1;
+      overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: var(--border) transparent;
+      background: #0d0f14;
+    }
+    .code-body pre {
+      margin: 0;
+      padding: 1.25rem 1.5rem;
+      background: transparent !important;
+    }
+    .code-body code {
+      background: transparent !important;
+      font-family: var(--mono) !important;
+      font-size: .72rem !important;
+      line-height: 1.7 !important;
+    }
+    .hljs            { background: transparent !important; }
+    .hljs-keyword    { color: #5bc8ff; }
+    .hljs-type       { color: #7fff6a; }
+    .hljs-string     { color: #ffc832; }
+    .hljs-number     { color: #ff9664; }
+    .hljs-comment    { color: #4a5068; font-style: italic; }
+    .hljs-title      { color: #c8a0ff; }
+    .hljs-params     { color: #9aa0bc; }
+    .hljs-built_in   { color: #5bc8ff; }
+    .hljs-literal    { color: #ff6b6b; }
+
+    /* ── Notes column ── */
+    .notes-col { display: flex; flex-direction: column; overflow: hidden; background: var(--surface); }
+    .notes-header { flex-shrink: 0; padding: .9rem 1.25rem .75rem; border-bottom: 1px solid var(--border); }
+    .notes-heading { font-family: var(--mono); font-size: .62rem; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+    .notes-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1.1rem 1.25rem;
+      scrollbar-width: thin;
+      scrollbar-color: var(--border) transparent;
+    }
+    .note-block { margin-bottom: 1.4rem; }
+    .note-label {
+      font-family: var(--mono);
+      font-size: .58rem;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      margin-bottom: .5rem;
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+    }
+    .note-label::before { content: ''; display: inline-block; width: 12px; height: 1px; }
+    .nl-green  { color: var(--accent);  } .nl-green::before  { background: var(--accent);  }
+    .nl-blue   { color: var(--accent2); } .nl-blue::before   { background: var(--accent2); }
+    .nl-red    { color: var(--accent3); } .nl-red::before    { background: var(--accent3); }
+    .nl-yellow { color: var(--accent4); } .nl-yellow::before { background: var(--accent4); }
+    .note-text { font-size: .8rem; line-height: 1.75; color: var(--dim); }
+    .note-text p { margin-bottom: .55rem; }
+    .note-text p:last-child { margin-bottom: 0; }
+    .note-text code {
+      font-family: var(--mono);
+      font-size: .68rem;
+      background: var(--surface2);
+      padding: .1em .35em;
+      border-radius: 2px;
+      color: var(--accent);
+      border: 1px solid var(--border);
+    }
+    .note-divider { height: 1px; background: var(--border); margin: 1.1rem 0; }
+    .complexity-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: .45rem .7rem;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      margin-bottom: .4rem;
+    }
+    .complexity-label { font-family: var(--mono); font-size: .6rem; color: var(--muted); letter-spacing: .06em; }
+    .complexity-val   { font-family: var(--mono); font-size: .68rem; font-weight: 700; color: var(--accent); }
+  </style>
+</head>
+<body>
+  <div id="site-nav"></div>
+  <script src="../assets/nav.js"></script>
+
+  <div class="pg-header">
+    <h1>Coding Challenges</h1>
+    <div class="tag-row">
+      <span class="tag tag-red">C++</span>
+    </div>
+    <span class="pg-meta">HackerRank &nbsp;·&nbsp; worked independently, reviewed with AI</span>
+  </div>
+
+  <div class="pg-retro">
+    These are HackerRank challenges worked through in roughly difficulty order. I attempted each
+    independently first — some are fully mine, some show a failed attempt alongside a correct solution
+    found with AI assistance, and a couple appear to have incorrect expected outputs from the judge.
+    The dev notes on each are honest about which is which.
+  </div>
+
+  <div class="challenges-shell">
+
+    <div class="sidebar">
+      <div class="sidebar-label">Challenges</div>
+      <div id="sidebarItems"></div>
+    </div>
+
+    <div class="code-col">
+      <div class="code-topbar">
+        <span class="code-title" id="codeTitle"></span>
+        <div class="tag-row" id="codeTags"></div>
+      </div>
+      <div class="code-body">
+        <pre><code class="language-cpp" id="codeBlock"></code></pre>
+      </div>
+    </div>
+
+    <div class="notes-col">
+      <div class="notes-header">
+        <div class="notes-heading">Dev Notes</div>
+      </div>
+      <div class="notes-body" id="notesBody"></div>
+    </div>
+
+  </div>
+
+  <script>
+    let current = 0;
+
+    function renderSidebar() {
+      const container = document.getElementById('sidebarItems');
+      container.innerHTML = '';
+      CHALLENGES.forEach((ch, i) => {
+        const el = document.createElement('div');
+        el.className = 'sidebar-item' + (i === current ? ' active' : '');
+        el.innerHTML = `
+          <div class="sidebar-top">
+            <span class="diff-pip pip-${ch.difficulty}"></span>
+            <span class="sidebar-name">${ch.short}</span>
+          </div>
+          <span class="sidebar-lang">${ch.lang}</span>`;
+        el.onclick = () => { current = i; renderAll(); };
+        container.appendChild(el);
+      });
+    }
+
+    function renderCode() {
+      const ch = CHALLENGES[current];
+      document.getElementById('codeTitle').textContent = ch.name;
+      document.getElementById('codeTags').innerHTML =
+        ch.tags.map(t => `<span class="tag ${t.cls}">${t.label}</span>`).join('');
+      const block = document.getElementById('codeBlock');
+      block.textContent = ch.code;
+      hljs.highlightElement(block);
+    }
+
+    function renderNotes() {
+      document.getElementById('notesBody').innerHTML = CHALLENGES[current].notes;
+    }
+
+    function renderAll() {
+      renderSidebar();
+      renderCode();
+      renderNotes();
+    }
+
+    // Deep-link support: challenges/index.html#rotation jumps straight to that challenge
+    function applyHash() {
+      const hash = window.location.hash.replace('#', '');
+      if (hash) {
+        const idx = CHALLENGES.findIndex(c => c.id === hash);
+        if (idx !== -1) current = idx;
+      }
+    }
+
+    applyHash();
+    renderAll();
+  </script>
+</body>
+</html>
