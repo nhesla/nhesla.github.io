@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Ultimate Tic-Tac-Toe — Nikolas Hesla</title>
+  <link rel="stylesheet" href="../assets/style.css"/>
+</head>
+<body>
+
+  <div id="site-nav"></div>
+  <script src="../assets/nav.js"></script>
+
+  <div class="page-header">
+    <h1>Ultimate Tic-Tac-Toe</h1>
+    <div class="tag-row">
+      <span class="tag tag-red">C++</span>
+      <span class="tag tag-green">Value-Based AI</span>
+      <span class="tag tag-neutral">9×9</span>
+    </div>
+  </div>
+
+  <div class="project-layout">
+
+    <!-- ── Game embed ── -->
+    <div class="embed-col">
+      <div class="embed-wrap">
+        <iframe src="app.html" title="Ultimate Tic-Tac-Toe"></iframe>
+      </div>
+      <div class="embed-bar">
+        <span class="embed-dot"></span>
+        ultimate tic-tac-toe &nbsp;·&nbsp; click to play
+      </div>
+    </div>
+
+    <!-- ── Notes panel ── -->
+    <div class="notes-col">
+      <div class="notes-header">
+        <div class="notes-heading">Dev Notes</div>
+      </div>
+      <div class="notes-body">
+
+        <div class="note-block">
+          <div class="note-label note-label-green">What This Is</div>
+          <div class="note-text">
+            <p>A 9×9 "Ultimate" Tic-Tac-Toe: a 3×3 outer grid of nine inner boards. Win three inner boards in a row to win the match. The inner cell you choose determines which outer board your opponent must play on next.</p>
+            <p>Originally written as a console C++ program. This is a faithful JS reimplementation of the same AI, ported to run in the browser with a click-based interface instead of coordinate input.</p>
+          </div>
+        </div>
+
+        <div class="note-divider"></div>
+
+        <div class="note-block">
+          <div class="note-label note-label-blue">The Mark System</div>
+          <div class="note-text">
+            <p>After every move, each inner board is re-evaluated and assigned a <code>Mark</code> enum value describing its strategic state. The AI reads these marks to decide which outer board to target.</p>
+          </div>
+          <div style="margin-top:.75rem;display:flex;flex-direction:column;gap:.3rem">
+            <div style="display:flex;align-items:center;gap:.5rem">
+              <span style="font-family:var(--mono);font-size:.55rem;letter-spacing:.06em;text-transform:uppercase;padding:.15rem .45rem;border-radius:2px;background:rgba(127,255,106,.1);color:var(--accent);border:1px solid rgba(127,255,106,.25);min-width:88px;text-align:center;flex-shrink:0">X_mark</span>
+              <span style="font-size:.75rem;color:var(--dim)">Won by X</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:.5rem">
+              <span style="font-family:var(--mono);font-size:.55rem;letter-spacing:.06em;text-transform:uppercase;padding:.15rem .45rem;border-radius:2px;background:rgba(91,200,255,.1);color:var(--accent2);border:1px solid rgba(91,200,255,.25);min-width:88px;text-align:center;flex-shrink:0">O_mark</span>
+              <span style="font-size:.75rem;color:var(--dim)">Won by O</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:.5rem">
+              <span style="font-family:var(--mono);font-size:.55rem;letter-spacing:.06em;text-transform:uppercase;padding:.15rem .45rem;border-radius:2px;background:rgba(255,255,255,.05);color:var(--muted);border:1px solid var(--border);min-width:88px;text-align:center;flex-shrink:0">Unwinnable</span>
+              <span style="font-size:.75rem;color:var(--dim)">Blocked for both players</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:.5rem">
+              <span style="font-family:var(--mono);font-size:.55rem;letter-spacing:.06em;text-transform:uppercase;padding:.15rem .45rem;border-radius:2px;background:rgba(255,255,255,.04);color:var(--dim);border:1px solid var(--border);min-width:88px;text-align:center;flex-shrink:0">Winnable</span>
+              <span style="font-size:.75rem;color:var(--dim)">Either player can win in one move</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:.5rem">
+              <span style="font-family:var(--mono);font-size:.55rem;letter-spacing:.06em;text-transform:uppercase;padding:.15rem .45rem;border-radius:2px;background:rgba(127,255,106,.08);color:var(--accent);border:1px solid rgba(127,255,106,.2);min-width:88px;text-align:center;flex-shrink:0">X_fork</span>
+              <span style="font-size:.75rem;color:var(--dim)">X has two ways to win</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:.5rem">
+              <span style="font-family:var(--mono);font-size:.55rem;letter-spacing:.06em;text-transform:uppercase;padding:.15rem .45rem;border-radius:2px;background:rgba(91,200,255,.08);color:var(--accent2);border:1px solid rgba(91,200,255,.2);min-width:88px;text-align:center;flex-shrink:0">O_fork</span>
+              <span style="font-size:.75rem;color:var(--dim)">O has two ways to win</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:.5rem">
+              <span style="font-family:var(--mono);font-size:.55rem;letter-spacing:.06em;text-transform:uppercase;padding:.15rem .45rem;border-radius:2px;background:rgba(127,255,106,.05);color:#a8ff98;border:1px solid rgba(127,255,106,.15);min-width:88px;text-align:center;flex-shrink:0">X_advantage</span>
+              <span style="font-size:.75rem;color:var(--dim)">X will fork regardless of O's play</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:.5rem">
+              <span style="font-family:var(--mono);font-size:.55rem;letter-spacing:.06em;text-transform:uppercase;padding:.15rem .45rem;border-radius:2px;background:rgba(91,200,255,.05);color:#98dcff;border:1px solid rgba(91,200,255,.15);min-width:88px;text-align:center;flex-shrink:0">O_advantage</span>
+              <span style="font-size:.75rem;color:var(--dim)">O will fork regardless of X's play</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:.5rem">
+              <span style="font-family:var(--mono);font-size:.55rem;letter-spacing:.06em;text-transform:uppercase;padding:.15rem .45rem;border-radius:2px;background:rgba(255,200,50,.08);color:var(--accent4);border:1px solid rgba(255,200,50,.2);min-width:88px;text-align:center;flex-shrink:0">X_blockable</span>
+              <span style="font-size:.75rem;color:var(--dim)">X can win or fork in one move</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:.5rem">
+              <span style="font-family:var(--mono);font-size:.55rem;letter-spacing:.06em;text-transform:uppercase;padding:.15rem .45rem;border-radius:2px;background:rgba(255,200,50,.05);color:#ffe080;border:1px solid rgba(255,200,50,.15);min-width:88px;text-align:center;flex-shrink:0">O_blockable</span>
+              <span style="font-size:.75rem;color:var(--dim)">O can win or fork in one move</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="note-divider"></div>
+
+        <div class="note-block">
+          <div class="note-label note-label-red">AI Decision Logic</div>
+          <div class="note-text">
+            <p>The AI runs in two passes. First it picks which inner board to target on the outer 3×3, reading the Mark values above — prioritizing <code>Winnable</code> boards, then its own <code>blockable</code> state, then defending against the opponent's. If no priority target is found it falls back to a turns-to-win value score per position.</p>
+            <p>Inside the chosen board it runs the classic hierarchy: win if possible → block a win → fork → block a fork → center → opposite corner → empty corner → empty side. Each step is gated by a level-scaled probability roll — lower levels believably skip higher-priority plays rather than just playing randomly.</p>
+            <p>At level 9, winning and blocking are guaranteed. Forking and block-forking are near-certain but not absolute — the roll can still fail roughly 1-in-9 times. This is intentional and carried over from the original C++ design, where a comment in the source explicitly notes level 9 <em>"can rarely make mistakes, theoretically making it possible to beat."</em> A hidden level 15 existed in the original for a truly perfect AI.</p>
+          </div>
+        </div>
+
+        <div class="note-divider"></div>
+
+        <div class="note-block">
+          <div class="note-label note-label-blue">Port Notes</div>
+          <div class="note-text">
+            <p>The C++ version used coordinate pair console input (<code>X=0, Y=1</code>) for both the outer and inner board. Here that's replaced with click handlers — first click picks the sub-board, second picks the cell. The AI move fires after a short delay so the board doesn't update instantaneously.</p>
+            <p><code>system("CLS")</code> and <code>system("pause")</code> calls are incompatible with a browser context; board state is re-rendered in place on each turn instead.</p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── Project nav row ── -->
+  <div class="project-nav-row">
+    <span class="project-nav-label">Also</span>
+    <a href="../grass-webgl-shader/index.html" class="proj-mini-card">
+      <div class="mini-thumb">🌿</div>
+      <div>
+        <div class="mini-name">Grass Shader</div>
+        <div class="mini-lang">GLSL · WebGL</div>
+      </div>
+    </a>
+    <a href="../react-app-deck-investigator/index.html" class="proj-mini-card">
+      <div class="mini-thumb">🃏</div>
+      <div>
+        <div class="mini-name">TCG Synergy Visualizer</div>
+        <div class="mini-lang">React · TypeScript</div>
+      </div>
+    </a>
+  </div>
+
+</body>
+</html>

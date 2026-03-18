@@ -2,13 +2,14 @@
 // Edit NAV_PROJECTS to add/remove/disable projects across all pages.
 
 const NAV_PROJECTS = [
-  { label: "Tower Defense",     href: "TowerDefense/index.html",                icon: "🗼", lang: "Java · Applet",         color: "rgba(255,107,107,0.1)", category: "games",       disabled: true },
-  { label: "Tank Game",         href: "phaser-tank-game/index.html",            icon: "🚀", lang: "JavaScript · Phaser.js", color: "rgba(91,200,255,0.1)",  category: "games"       },
-  { label: "Vulcan's Suit",     href: "Vulcans_bad_suit_v1.i/index.html",       icon: "💣", lang: "GameMaker",              color: "rgba(200,150,255,0.1)", category: "games",       disabled: true },
-  { label: "Tax Dodgers",       href: "TaxDodgers_Godot/index.html",            icon: "🧾", lang: "Godot · GDScript",       color: "rgba(100,220,150,0.1)", category: "games"       },
-  { label: "Math Boogers",      href: "MathBoogers/index.html",                 icon: "🟢", lang: "JavaScript",             color: "rgba(168,224,99,0.1)",  category: "games"       },
-  { label: "Grass Shader",      href: "grass-webgl-shader/index.html",          icon: "🌿", lang: "WebGL · GLSL",           color: "rgba(127,255,106,0.1)", category: "interactive" },
-  { label: "Deck Investigator", href: "react-app-deck-investigator/index.html", icon: "🃏", lang: "React · TypeScript",     color: "rgba(255,200,50,0.1)",  category: "interactive" },
+  { label: "Tower Defense",         href: "TowerDefense/index.html",                icon: "🗼", lang: "Java · Applet",         color: "rgba(255,107,107,0.1)", category: "games",       disabled: true },
+  { label: "Tank Game",             href: "phaser-tank-game/index.html",            icon: "🚀", lang: "JavaScript · Phaser.js", color: "rgba(91,200,255,0.1)",  category: "games"       },
+  { label: "Vulcan's Suit",         href: "Vulcans_bad_suit_v1.i/index.html",       icon: "💣", lang: "GameMaker",              color: "rgba(200,150,255,0.1)", category: "games",       disabled: true },
+  { label: "Tax Dodgers",           href: "TaxDodgers_Godot/index.html",            icon: "🧾", lang: "Godot · GDScript",       color: "rgba(100,220,150,0.1)", category: "games"       },
+  { label: "Math Boogers",          href: "MathBoogers/index.html",                 icon: "🟢", lang: "JavaScript",             color: "rgba(168,224,99,0.1)",  category: "games"       },
+  { label: "Ultimate Tic-Tac-Toe", href: "ultimate_TicTacToe/index.html",          icon: "⬜", lang: "C++ · Value-Based AI",   color: "rgba(127,255,106,0.1)", category: "games"       },
+  { label: "Grass Shader",          href: "grass-webgl-shader/index.html",          icon: "🌿", lang: "WebGL · GLSL",           color: "rgba(127,255,106,0.1)", category: "interactive" },
+  { label: "Deck Investigator",     href: "react-app-deck-investigator/index.html", icon: "🃏", lang: "React · TypeScript",     color: "rgba(255,200,50,0.1)",  category: "interactive" },
 ];
 
 (function () {

@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Ultimate Tic-Tac-Toe</title>
+  <style>
+    :root {
+      --bg:#0d0f14; --surface:#13161e; --surface2:#1a1e28; --border:#252a38;
+      --accent:#7fff6a; --accent2:#5bc8ff; --accent3:#ff6b6b; --accent4:#ffc832;
+      --text:#e8eaf0; --muted:#6b7290; --dim:#9aa0bc;
+      --mono:'Space Mono',monospace; --sans:'Syne',sans-serif; --radius:3px;
+    }
+    @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;700;800&display=swap');
+    *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+    html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--sans);-webkit-font-smoothing:antialiased;overflow:hidden}
+
+    /* ── Layout ── */
+    .app-shell {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+    }
+    .topbar {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: .5rem 1rem;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+      min-height: 40px;
+    }
+    .turn-indicator {
+      font-family: var(--mono);
+      font-size: .65rem;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+    .turn-x { color: var(--accent); }
+    .turn-o { color: var(--accent2); }
+    .status-msg {
+      font-family: var(--mono);
+      font-size: .62rem;
+      color: var(--muted);
+      letter-spacing: .05em;
+      flex: 1;
+      text-align: right;
+    }
+
+    /* ── Setup ── */
+    .setup-screen {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 1.75rem;
+      padding: 1.5rem;
+    }
+    .setup-title {
+      font-weight: 800;
+      font-size: 1.25rem;
+      letter-spacing: -.02em;
+    }
+    .setup-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: .85rem 2rem;
+      width: 100%;
+      max-width: 420px;
+    }
+    .setup-player { display: flex; flex-direction: column; gap: .5rem; }
+    .setup-label {
+      font-family: var(--mono);
+      font-size: .6rem;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .setup-label span { color: var(--accent); font-weight: 700; }
+    .setup-label span.o-lbl { color: var(--accent2); }
+    .type-toggle {
+      display: flex;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .type-btn {
+      flex: 1;
+      padding: .4rem .5rem;
+      font-family: var(--mono);
+      font-size: .6rem;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      background: none;
+      border: none;
+      color: var(--muted);
+      cursor: pointer;
+      transition: background .15s, color .15s;
+    }
+    .type-btn.ax { background: rgba(127,255,106,.08); color: var(--accent); }
+    .type-btn.ao { background: rgba(91,200,255,.08); color: var(--accent2); }
+    .level-row { display: flex; align-items: center; gap: .5rem; }
+    .level-label { font-family: var(--mono); font-size: .58rem; color: var(--muted); width: 46px; flex-shrink: 0; }
+    input[type=range] { flex: 1; accent-color: var(--accent); height: 3px; }
+    .level-val { font-family: var(--mono); font-size: .6rem; color: var(--accent); width: 10px; text-align: right; }
+    .name-input {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: .38rem .55rem;
+      font-family: var(--mono);
+      font-size: .68rem;
+      color: var(--text);
+      outline: none;
+      width: 100%;
+      transition: border-color .15s;
+    }
+    .name-input:focus { border-color: var(--accent); }
+    .start-btn {
+      padding: .65rem 2.2rem;
+      background: var(--accent);
+      color: var(--bg);
+      font-family: var(--mono);
+      font-size: .68rem;
+      font-weight: 700;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      border: none;
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: opacity .15s;
+    }
+    .start-btn:hover { opacity: .85; }
+
+    /* ── Board ── */
+    .board-wrap {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: .85rem;
+      overflow: hidden;
+    }
+    .mega-board {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      grid-template-rows: repeat(3, 1fr);
+      gap: 5px;
+      width: min(100%, 100vh - 40px - 2rem);
+      aspect-ratio: 1;
+    }
+    .zone {
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      background: var(--surface);
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      grid-template-rows: repeat(3, 1fr);
+      gap: 2px;
+      padding: 3px;
+      position: relative;
+      transition: border-color .15s, background .15s;
+    }
+    .zone.zx { background: rgba(127,255,106,.07); border-color: rgba(127,255,106,.35); }
+    .zone.zo { background: rgba(91,200,255,.07); border-color: rgba(91,200,255,.35); }
+    .zone.zd { background: rgba(255,255,255,.02); border-color: var(--border); opacity: .5; }
+    .zone-ov {
+      position: absolute; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 2.2rem; font-weight: 900;
+      border-radius: 3px; pointer-events: none;
+      opacity: 0; transition: opacity .2s;
+    }
+    .zone.zx .zone-ov { opacity: 1; color: var(--accent); }
+    .zone.zo .zone-ov { opacity: 1; color: var(--accent2); }
+    .zone.zd .zone-ov { opacity: 1; color: var(--muted); font-size: 1.3rem; }
+    .cell {
+      background: var(--surface2);
+      border-radius: 2px;
+      border: 1px solid transparent;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-family: var(--mono);
+      font-weight: 800;
+      font-size: .8rem;
+      transition: background .12s, border-color .12s;
+      aspect-ratio: 1;
+    }
+    .cell:hover:not(.ct):not(.cl) { background: rgba(127,255,106,.08); border-color: rgba(127,255,106,.3); }
+    .cell.cx { color: var(--accent); }
+    .cell.co { color: var(--accent2); }
+    .cell.ct { cursor: default; }
+    .cell.cl { cursor: not-allowed; opacity: .4; }
+    .picking-zone .cell.cl { cursor: pointer; }
+    .cell.ch { border-color: rgba(127,255,106,.2); background: rgba(127,255,106,.04); }
+
+    /* ── End ── */
+    .end-screen {
+      flex: 1;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 1rem; padding: 2rem;
+    }
+    .end-result { font-weight: 800; font-size: 1.5rem; letter-spacing: -.02em; }
+    .end-sub { font-family: var(--mono); font-size: .68rem; color: var(--muted); letter-spacing: .06em; }
+    .replay-btn {
+      padding: .5rem 1.6rem;
+      border: 1px solid var(--accent);
+      background: rgba(127,255,106,.06);
+      color: var(--accent);
+      font-family: var(--mono);
+      font-size: .62rem;
+      font-weight: 700;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: background .15s;
+    }
+    .replay-btn:hover { background: rgba(127,255,106,.14); }
+  </style>
+</head>
+<body>
+<div class="app-shell">
+
+  <div class="topbar" id="topbar" style="display:none">
+    <span class="turn-indicator" id="turnInd"></span>
+    <span class="status-msg" id="statusMsg"></span>
+  </div>
+
+  <div class="setup-screen" id="setupScreen">
+    <div class="setup-title">Configure Game</div>
+    <div class="setup-grid">
+      <div class="setup-player">
+        <div class="setup-label">Player <span>X</span></div>
+        <div class="type-toggle">
+          <button class="type-btn ax" id="xHBtn" onclick="setType('x','human')">Human</button>
+          <button class="type-btn"    id="xABtn" onclick="setType('x','ai')">AI</button>
+        </div>
+        <div id="xHOpts"><input class="name-input" id="xName" type="text" placeholder="Name" value="Player X"/></div>
+        <div id="xAOpts" style="display:none">
+          <div class="level-row">
+            <span class="level-label">Level</span>
+            <input type="range" id="xLvl" min="1" max="9" value="5" oninput="document.getElementById('xLvlV').textContent=this.value"/>
+            <span class="level-val" id="xLvlV">5</span>
+          </div>
+        </div>
+      </div>
+      <div class="setup-player">
+        <div class="setup-label">Player <span class="o-lbl">O</span></div>
+        <div class="type-toggle">
+          <button class="type-btn ao" id="oHBtn" onclick="setType('o','human')">Human</button>
+          <button class="type-btn"    id="oABtn" onclick="setType('o','ai')">AI</button>
+        </div>
+        <div id="oHOpts"><input class="name-input" id="oName" type="text" placeholder="Name" value="Player O"/></div>
+        <div id="oAOpts" style="display:none">
+          <div class="level-row">
+            <span class="level-label">Level</span>
+            <input type="range" id="oLvl" min="1" max="9" value="5" oninput="document.getElementById('oLvlV').textContent=this.value"/>
+            <span class="level-val" id="oLvlV">5</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <button class="start-btn" onclick="startGame()">Start Game</button>
+  </div>
+
+  <div class="board-wrap" id="boardWrap" style="display:none">
+    <div class="mega-board" id="megaBoard"></div>
+  </div>
+
+  <div class="end-screen" id="endScreen" style="display:none">
+    <div class="end-result" id="endResult"></div>
+    <div class="end-sub"    id="endSub"></div>
+    <button class="replay-btn" onclick="showSetup()">Play Again</button>
+  </div>
+
+</div>
+<script>
+// ── Mark constants ──────────────────────────────────────────
+const M={X:'X',O:'O',UW:'U',W:'W',XF:'XF',OF:'OF',XA:'XA',OA:'OA',XB:'XB',OB:'OB',OPEN:'_'};
+
+// ── SmallBoard ──────────────────────────────────────────────
+class SmallBoard{
+  constructor(){
+    this.tile=Array.from({length:3},()=>Array(3).fill(M.OPEN));
+    this.xT=Array(8).fill(3); this.oT=Array(8).fill(3);
+    this._chk();
+  }
+  clone(){const b=new SmallBoard();b.tile=this.tile.map(r=>[...r]);b.xT=[...this.xT];b.oT=[...this.oT];return b;}
+  get(r,c){return this.tile[r][c];}
+  mark(r,c,isX){this.tile[r][c]=isX?M.X:M.O;this._chk();}
+  setMark(r,c,m){this.tile[r][c]=m;}
+  isEmpty(r,c){const t=this.tile[r][c];return t===M.OPEN||(t!==M.X&&t!==M.O&&t!==M.UW);}
+  ttw(isX,idx){return isX?this.xT[idx]:this.oT[idx];}
+  _chk(){for(let i=0;i<8;i++){this.xT[i]=this._ct(true,i);this.oT[i]=this._ct(false,i);}}
+  _ct(isX,idx){
+    const m=isX?M.X:M.O,opp=isX?M.O:M.X;
+    const LINES=[[[0,0],[0,1],[0,2]],[[1,0],[1,1],[1,2]],[[2,0],[2,1],[2,2]],[[0,0],[1,0],[2,0]],[[0,1],[1,1],[2,1]],[[0,2],[1,2],[2,2]],[[0,0],[1,1],[2,2]],[[0,2],[1,1],[2,0]]];
+    const L=LINES[idx],vals=L.map(([r,c])=>this.tile[r][c]);
+    if(vals.includes(opp))return 4;
+    const mc=vals.filter(v=>v===m).length,ec=L.filter(([r,c])=>this.isEmpty(r,c)).length;
+    if(mc===3)return 0;if(mc===2&&ec===1)return 1;if(mc===1&&ec===2)return 2;if(ec===3)return 3;return 4;
+  }
+}
+
+// ── OuterBoard ──────────────────────────────────────────────
+class OuterBoard{
+  constructor(){
+    this.zones=Array.from({length:3},()=>Array.from({length:3},()=>new SmallBoard()));
+    this.os=Array.from({length:3},()=>Array(3).fill(M.OPEN));
+    this.ot={x:Array(8).fill(3),o:Array(8).fill(3)};
+  }
+  zone(zr,zc){return this.zones[zr][zc];}
+  mark(zr,zc,r,c,isX){this.zones[zr][zc].mark(r,c,isX);}
+  outerTile(zr,zc){return this.os[zr][zc];}
+  outerTileF(i){return this.os[f2r(i)][f2c(i)];}
+  isPlayable(zr,zc){const s=this.os[zr][zc];return s!==M.X&&s!==M.O&&s!==M.UW;}
+  outerEmpty(zr,zc){const s=this.os[zr][zc];return s===M.OPEN||(s!==M.X&&s!==M.O&&s!==M.UW);}
+  outerEmptyF(i){return this.outerEmpty(f2r(i),f2c(i));}
+  getTurns(isX,idx){return isX?this.ot.x[idx]:this.ot.o[idx];}
+  // Used by value modifier: is this zone winnable for the given player in one move?
+  isWinnableFor(i,isX){
+    const b=this.zones[f2r(i)][f2c(i)];
+    for(let idx=0;idx<8;idx++)if(b.ttw(isX,idx)===1)return true;
+    return false;
+  }
+
+  eval(){
+    for(let zr=0;zr<3;zr++)for(let zc=0;zc<3;zc++){
+      const cur=this.os[zr][zc];
+      if(cur===M.X||cur===M.O)continue;
+      if(this._won(zr,zc,true))       this.os[zr][zc]=M.X;
+      else if(this._won(zr,zc,false)) this.os[zr][zc]=M.O;
+      else if(this._unwin(zr,zc,true)&&this._unwin(zr,zc,false)) this.os[zr][zc]=M.UW;
+      else if(this._anyOne(zr,zc))    this.os[zr][zc]=M.W;
+      else if(this._forked(zr,zc,true))  this.os[zr][zc]=M.XF;
+      else if(this._forked(zr,zc,false)) this.os[zr][zc]=M.OF;
+      else if(this._adv(zr,zc,true))  this.os[zr][zc]=M.XA;
+      else if(this._adv(zr,zc,false)) this.os[zr][zc]=M.OA;
+      else if(this._blk(zr,zc,true))  this.os[zr][zc]=M.XB;
+      else if(this._blk(zr,zc,false)) this.os[zr][zc]=M.OB;
+      else                             this.os[zr][zc]=M.OPEN;
+    }
+    const ob=new SmallBoard();
+    for(let r=0;r<3;r++)for(let c=0;c<3;c++)ob.tile[r][c]=this.os[r][c];
+    ob._chk();
+    this.ot.x=[...ob.xT];this.ot.o=[...ob.oT];
+  }
+  _won(zr,zc,isX){const b=this.zones[zr][zc];for(let i=0;i<8;i++)if(b.ttw(isX,i)===0)return true;return false;}
+  _unwin(zr,zc,isX){const b=this.zones[zr][zc];for(let i=0;i<8;i++)if(b.ttw(isX,i)<4)return false;return true;}
+  _anyOne(zr,zc){const b=this.zones[zr][zc];for(let i=0;i<8;i++)if(b.ttw(true,i)===1||b.ttw(false,i)===1)return true;return false;}
+  _forked(zr,zc,isX){const b=this.zones[zr][zc];let n=0;for(let i=0;i<8;i++)if(b.ttw(isX,i)===1)n++;return n>=2;}
+  _adv(zr,zc,isX){const b=this.zones[zr][zc];let n=0;for(let i=0;i<8;i++)if(b.ttw(isX,i)<=2)n++;return n>=3;}
+  _blk(zr,zc,isX){const b=this.zones[zr][zc];for(let i=0;i<8;i++)if(b.ttw(isX,i)===1)return true;let n=0;for(let i=0;i<8;i++)if(b.ttw(isX,i)===2)n++;return n>=2;}
+
+  winner(){
+    const LINES=[[[0,0],[0,1],[0,2]],[[1,0],[1,1],[1,2]],[[2,0],[2,1],[2,2]],[[0,0],[1,0],[2,0]],[[0,1],[1,1],[2,1]],[[0,2],[1,2],[2,2]],[[0,0],[1,1],[2,2]],[[0,2],[1,1],[2,0]]];
+    for(const L of LINES){
+      const v=L.map(([r,c])=>this.os[r][c]);
+      if(v.every(x=>x===M.X))return'X';
+      if(v.every(x=>x===M.O))return'O';
+    }
+    let done=true;
+    for(let r=0;r<3;r++)for(let c=0;c<3;c++){const s=this.os[r][c];if(s!==M.X&&s!==M.O&&s!==M.UW)done=false;}
+    return done?'draw':null;
+  }
+}
+
+function f2r(i){return Math.floor(i/3);}
+function f2c(i){return i%3;}
+function ri(n){return Math.floor(Math.random()*n);}
+// Mirrors C++: rand() % level + level > threshold
+function roll(lv,th){return(ri(lv)+lv)>th;}
+function roll2(lv,th){return(ri(lv)+lv)>th;}
+
+// ── Adjacency bonus: same col, same row, same diagonal ──────
+// Mirrors the 4 if-checks in the C++ value modifier loops
+function adj(i,j){
+  let b=0;
+  if(f2c(i)===f2c(j))b++;           // same col (i%3 == j%3)
+  if(f2r(i)===f2r(j))b++;           // same row ((i/3)%3 == (j/3)%3)
+  if(i%4===0&&j%4===0)b++;          // main diagonal (0,4,8)
+  if((f2c(i)+f2r(i)===2)&&(f2c(j)+f2r(j)===2))b++; // anti-diagonal (2,4,6)
+  return b;
+}
+
+// ── Pick outer zone (PlayerMove in C++) ─────────────────────
+// Pure value-based with mark-modifiers, exactly as in C++
+function aiZone(board,isX,lv){
+  const m=isX?M.X:M.O;
+  const myB=isX?M.XB:M.OB, opB=isX?M.OB:M.XB;
+  const myA=isX?M.XA:M.OA, myF=isX?M.XF:M.OF;
+  const opA=isX?M.OA:M.XA, opF=isX?M.OF:M.XF;
+  let tempCoord=-1, opts=[], numOpts=0;
+
+  // 1. Winnable zone
+  if(roll(lv,6)||(roll2(lv,4)&&ri(2)===0)){
+    opts=[];
+    for(let i=0;i<9;i++)if(board.outerTileF(i)===M.W&&board.outerEmptyF(i))opts.push(i);
+    if(opts.length)tempCoord=opts[ri(opts.length)];
+  }
+  // 2. Own blockable zone
+  if(tempCoord===-1&&((roll(lv,4))||(roll2(lv,2)&&ri(2)===0))){
+    opts=[];
+    for(let i=0;i<9;i++)if(board.outerTileF(i)===myB&&board.outerEmptyF(i))opts.push(i);
+    if(opts.length)tempCoord=opts[ri(opts.length)];
+  }
+  // 3. Opponent blockable zone (harder threshold)
+  if(tempCoord===-1&&(roll(lv,14)||(roll2(lv,9)&&ri(2)===0))){
+    opts=[];
+    for(let i=0;i<9;i++)if(board.outerTileF(i)===opB&&board.outerEmptyF(i))opts.push(i);
+    if(opts.length)tempCoord=opts[ri(opts.length)];
+  }
+
+  // 4. Value fallback — build value[9] from outer turns, then apply mark modifiers
+  if(tempCoord===-1){
+    const T=(x,idx)=>board.getTurns(x,idx);
+    // Base value: sum of (4 - turns) for each win-line this position is part of, both players
+    // Mirrors C++ value[] array exactly (positions 0-8, lines 0-7)
+    const val=[
+      (4-T(1,0))+(4-T(0,0))+(4-T(1,3))+(4-T(0,3))+(4-T(1,6))+(4-T(0,6)),
+      (4-T(1,1))+(4-T(0,1))+(4-T(1,3))+(4-T(0,3)),
+      (4-T(1,2))+(4-T(0,2))+(4-T(1,3))+(4-T(0,3))+(4-T(1,7))+(4-T(0,7)),
+      (4-T(1,0))+(4-T(0,0))+(4-T(1,4))+(4-T(0,4)),
+      (4-T(1,1))+(4-T(0,1))+(4-T(1,4))+(4-T(0,4))+(4-T(1,6))+(4-T(0,6))+(4-T(1,7))+(4-T(0,7)),
+      (4-T(1,2))+(4-T(0,2))+(4-T(1,4))+(4-T(0,4)),
+      (4-T(1,0))+(4-T(0,0))+(4-T(1,5))+(4-T(0,5))+(4-T(1,7))+(4-T(0,7)),
+      (4-T(1,1))+(4-T(0,1))+(4-T(1,5))+(4-T(0,5)),
+      (4-T(1,2))+(4-T(0,2))+(4-T(1,5))+(4-T(0,5))+(4-T(1,6))+(4-T(0,6)),
+    ];
+    // Zero out occupied/won zones
+    for(let i=0;i<9;i++)if(!board.outerEmptyF(i))val[i]=-1;
+
+    // Modifier pass: my_advantage — set to -1, boost neighbors
+    if(roll(lv,14)||(roll2(lv,9)&&ri(2)===0)){
+      for(let i=0;i<9;i++)if(board.outerTileF(i)===myA){
+        val[i]=-1;
+        for(let j=0;j<9;j++)if(val[j]!==-1)val[j]+=adj(i,j);
+      }
+    }
+    // Modifier pass: my_fork
+    if(roll(lv,9)||(roll2(lv,6)&&ri(2)===0)){
+      for(let i=0;i<9;i++)if(board.outerTileF(i)===myF){
+        val[i]=-1;
+        for(let j=0;j<9;j++)if(val[j]!==-1)val[j]+=adj(i,j);
+      }
+    }
+    // Modifier pass: opp_advantage
+    if(roll(lv,9)||(roll2(lv,6)&&ri(2)===0)){
+      for(let i=0;i<9;i++)if(board.outerTileF(i)===opA){
+        val[i]=-1;
+        for(let j=0;j<9;j++)if(val[j]!==-1)val[j]+=adj(i,j);
+      }
+    }
+    // Modifier pass: opp_fork
+    if(roll(lv,6)||(roll2(lv,4)&&ri(2)===0)){
+      for(let i=0;i<9;i++)if(board.outerTileF(i)===opF){
+        val[i]=-1;
+        for(let j=0;j<9;j++)if(val[j]!==-1)val[j]+=adj(i,j);
+      }
+    }
+    // Clamp: opp-winnable zones to value +1 (don't over-value them)
+    if(roll(lv,4)||(roll2(lv,2)&&ri(2)===0)){
+      for(let i=0;i<9;i++)if(val[i]!==-1&&board.isWinnableFor(i,!isX))val[i]=1;
+    }
+    // Clamp: own-winnable zones to value +1
+    if(roll(lv,2)){
+      for(let i=0;i<9;i++)if(val[i]!==-1&&board.isWinnableFor(i,isX))val[i]=1;
+    }
+
+    // Pick best tier (scan 20 down to 1, take first tier with candidates)
+    opts=[];
+    for(let score=20;score>0;score--){
+      for(let i=0;i<9;i++)if(val[i]===score)opts.push(i);
+      if(opts.length)break;
+    }
+    if(opts.length)tempCoord=opts[ri(opts.length)];
+  }
+
+  // Random fallback
+  if(tempCoord===-1){
+    const av=[];
+    for(let i=0;i<9;i++)if(board.outerEmptyF(i))av.push(i);
+    if(av.length)tempCoord=av[ri(av.length)];
+  }
+  return tempCoord;
+}
+
+// ── Pick inner cell (PlayerMovePart2 in C++) ────────────────
+// Rules-based hierarchy with value-choice at the top, all level-gated
+function aiCell(board,zr,zc,isX,lv){
+  const b=board.zone(zr,zc);
+  let tempCoord=-1;
+
+  // ValueChoice first — highest threshold
+  if(tempCoord===-1&&roll(lv,15)){
+    const vc=innerValChoice(b);
+    if(vc!==-1)tempCoord=vc;
+  }
+  // Win
+  if(tempCoord===-1&&roll(lv,4)){
+    const w=canWin(b,isX);
+    if(w!==-1)tempCoord=w;
+  }
+  // Block win
+  if(tempCoord===-1&&roll(lv,4)){
+    const w=canWin(b,!isX);
+    if(w!==-1)tempCoord=w;
+  }
+  // Fork
+  if(tempCoord===-1&&(roll(lv,9)||(roll2(lv,6)&&ri(2)===0))){
+    const f=canFork(b,isX);
+    if(f!==-1)tempCoord=f;
+  }
+  // Block fork
+  if(tempCoord===-1&&(roll(lv,9)||(roll2(lv,6)&&ri(2)===0))){
+    const f=canFork(b,!isX);
+    if(f!==-1)tempCoord=f;
+  }
+  // Center
+  if(tempCoord===-1&&(roll(lv,4)||(roll2(lv,2)&&ri(2)===0))){
+    if(b.isEmpty(1,1))tempCoord=4;
+  }
+  // Opposite corner
+  if(tempCoord===-1&&roll(lv,6)){
+    const oc=oppCorner(b,isX);
+    if(oc!==-1)tempCoord=oc;
+  }
+  // Empty corner
+  if(tempCoord===-1&&roll(lv,2)){
+    const ec=emptyCorner(b);
+    if(ec!==-1)tempCoord=ec;
+  }
+  // Empty side
+  if(tempCoord===-1&&roll(lv,2)){
+    const es=emptySide(b);
+    if(es!==-1)tempCoord=es;
+  }
+  // Random fallback
+  if(tempCoord===-1){
+    const av=[];
+    for(let r=0;r<3;r++)for(let c=0;c<3;c++)if(b.isEmpty(r,c))av.push(r*3+c);
+    if(av.length)tempCoord=av[ri(av.length)];
+  }
+  if(tempCoord===-1)return null;
+  return[f2r(tempCoord),f2c(tempCoord)];
+}
+
+// ── Inner board: value choice (Check_ValueChoice in C++) ────
+// Uses the small board's own ttw (turns-to-win) values
+function innerValChoice(b){
+  const val=[
+    (4-b.ttw(1,0))+(4-b.ttw(0,0))+(4-b.ttw(1,3))+(4-b.ttw(0,3))+(4-b.ttw(1,6))+(4-b.ttw(0,6)),
+    (4-b.ttw(1,1))+(4-b.ttw(0,1))+(4-b.ttw(1,3))+(4-b.ttw(0,3)),
+    (4-b.ttw(1,2))+(4-b.ttw(0,2))+(4-b.ttw(1,3))+(4-b.ttw(0,3))+(4-b.ttw(1,7))+(4-b.ttw(0,7)),
+    (4-b.ttw(1,0))+(4-b.ttw(0,0))+(4-b.ttw(1,4))+(4-b.ttw(0,4)),
+    (4-b.ttw(1,1))+(4-b.ttw(0,1))+(4-b.ttw(1,4))+(4-b.ttw(0,4))+(4-b.ttw(1,6))+(4-b.ttw(0,6))+(4-b.ttw(1,7))+(4-b.ttw(0,7)),
+    (4-b.ttw(1,2))+(4-b.ttw(0,2))+(4-b.ttw(1,4))+(4-b.ttw(0,4)),
+    (4-b.ttw(1,0))+(4-b.ttw(0,0))+(4-b.ttw(1,5))+(4-b.ttw(0,5))+(4-b.ttw(1,7))+(4-b.ttw(0,7)),
+    (4-b.ttw(1,1))+(4-b.ttw(0,1))+(4-b.ttw(1,5))+(4-b.ttw(0,5)),
+    (4-b.ttw(1,2))+(4-b.ttw(0,2))+(4-b.ttw(1,5))+(4-b.ttw(0,5))+(4-b.ttw(1,6))+(4-b.ttw(0,6)),
+  ];
+  for(let i=0;i<9;i++)if(!b.isEmpty(f2r(i),f2c(i)))val[i]=-1;
+  let opts=[];
+  for(let score=12;score>0;score--){
+    for(let i=0;i<9;i++)if(val[i]===score)opts.push(i);
+    if(opts.length)break;
+  }
+  return opts.length?opts[ri(opts.length)]:-1;
+}
+
+// ── Inner board helper checks (return flat index 0-8 or -1) ─
+const LINES=[[[0,0],[0,1],[0,2]],[[1,0],[1,1],[1,2]],[[2,0],[2,1],[2,2]],[[0,0],[1,0],[2,0]],[[0,1],[1,1],[2,1]],[[0,2],[1,2],[2,2]],[[0,0],[1,1],[2,2]],[[0,2],[1,1],[2,0]]];
+
+function canWin(b,isX){
+  const m=isX?M.X:M.O;
+  for(const L of LINES){
+    const v=L.map(([r,c])=>b.get(r,c));
+    const mc=v.filter(x=>x===m).length;
+    const ec=L.filter(([r,c])=>b.isEmpty(r,c)).length;
+    if(mc===2&&ec===1)for(let i=0;i<3;i++)if(b.isEmpty(L[i][0],L[i][1]))return L[i][0]*3+L[i][1];
+  }
+  return -1;
+}
+function canFork(b,isX){
+  const m=isX?M.X:M.O;
+  const wc={};
+  for(const L of LINES){
+    const v=L.map(([r,c])=>b.get(r,c));
+    const mc=v.filter(x=>x===m).length;
+    const ec=L.filter(([r,c])=>b.isEmpty(r,c)).length;
+    if(mc===2&&ec===1){
+      for(let i=0;i<3;i++)if(b.isEmpty(L[i][0],L[i][1])){
+        const k=L[i][0]*3+L[i][1];
+        wc[k]=(wc[k]||0)+1;
+        if(wc[k]>=2)return k;
+      }
+    }
+  }
+  // Center fork: opponent on both diagonals
+  if(b.isEmpty(1,1)){
+    const d1=[[0,0],[2,2]],d2=[[2,0],[0,2]];
+    if(d1.some(([r,c])=>b.get(r,c)===m)&&d2.some(([r,c])=>b.get(r,c)===m))return 4;
+  }
+  return -1;
+}
+function oppCorner(b,isX){
+  const opp=isX?M.O:M.X;
+  const pairs=[[[0,0],[2,2]],[[2,0],[0,2]],[[0,2],[2,0]],[[2,2],[0,0]]];
+  for(const[[or,oc],[tr,tc]]of pairs)if(b.get(or,oc)===opp&&b.isEmpty(tr,tc))return tr*3+tc;
+  return -1;
+}
+function emptyCorner(b){
+  const c=[[0,0],[2,0],[0,2],[2,2]];shuffle(c);
+  for(const[r,c2]of c)if(b.isEmpty(r,c2))return r*3+c2;
+  return -1;
+}
+function emptySide(b){
+  const s=[[1,0],[0,1],[2,1],[1,2]];shuffle(s);
+  for(const[r,c]of s)if(b.isEmpty(r,c))return r*3+c;
+  return -1;
+}
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=ri(i+1);[a[i],a[j]]=[a[j],a[i]];}}
+
+// ── Game state ──────────────────────────────────────────────
+let G={board:null,isX:true,phase:'setup',selZone:null,players:{x:{type:'human',name:'Player X',level:5},o:{type:'human',name:'Player O',level:5}},moves:0};
+
+function setType(p,t){
+  const isX=p==='x';
+  document.getElementById(p+'HBtn').className='type-btn'+(t==='human'?(isX?' ax':' ao'):'');
+  document.getElementById(p+'ABtn').className='type-btn'+(t==='ai'?(isX?' ax':' ao'):'');
+  document.getElementById(p+'HOpts').style.display=t==='human'?'':'none';
+  document.getElementById(p+'AOpts').style.display=t==='ai'?'':'none';
+}
+
+function startGame(){
+  const xt=document.getElementById('xABtn').className.includes('ax')?'ai':'human';
+  const ot=document.getElementById('oABtn').className.includes('ao')?'ai':'human';
+  G.players.x={type:xt,name:xt==='human'?(document.getElementById('xName').value||'Player X'):`AI Lv${document.getElementById('xLvl').value}`,level:+document.getElementById('xLvl').value};
+  G.players.o={type:ot,name:ot==='human'?(document.getElementById('oName').value||'Player O'):`AI Lv${document.getElementById('oLvl').value}`,level:+document.getElementById('oLvl').value};
+  G.board=new OuterBoard();G.isX=Math.random()<.5;G.selZone=null;G.moves=0;G.phase='zone';
+  show('boardWrap');hide('setupScreen');hide('endScreen');show('topbar');
+  render();tick();
+  if(isAI())schedAI();
+}
+
+function showSetup(){G.phase='setup';show('setupScreen');hide('boardWrap');hide('endScreen');hide('topbar');}
+function show(id){document.getElementById(id).style.display='';}
+function hide(id){document.getElementById(id).style.display='none';}
+function isAI(){return(G.isX?G.players.x:G.players.o).type==='ai';}
+
+function render(){
+  const mb=document.getElementById('megaBoard');mb.innerHTML='';
+  mb.classList.toggle('picking-zone', G.phase==='zone');
+  for(let zr=0;zr<3;zr++)for(let zc=0;zc<3;zc++){
+    const z=document.createElement('div');z.className='zone';
+    const om=G.board.os[zr][zc];
+    const done=om===M.X||om===M.O||om===M.UW;
+    if(om===M.X)z.classList.add('zx');else if(om===M.O)z.classList.add('zo');else if(om===M.UW)z.classList.add('zd');
+    if(G.selZone&&G.selZone[0]===zr&&G.selZone[1]===zc){z.style.borderColor='rgba(127,255,106,.6)';z.style.background='rgba(127,255,106,.04)';}
+    const ov=document.createElement('div');ov.className='zone-ov';
+    ov.textContent=om===M.X?'X':om===M.O?'O':om===M.UW?'—':'';
+    z.appendChild(ov);
+    const b=G.board.zone(zr,zc);
+    for(let r=0;r<3;r++)for(let c=0;c<3;c++){
+      const cl=document.createElement('div');cl.className='cell';
+      const v=b.get(r,c);
+      if(v===M.X){cl.textContent='X';cl.classList.add('cx','ct');}
+      else if(v===M.O){cl.textContent='O';cl.classList.add('co','ct');}
+      else{
+        const canClick=!done&&G.phase==='cell'&&G.selZone&&G.selZone[0]===zr&&G.selZone[1]===zc&&!isAI();
+        if(!canClick)cl.classList.add('cl');
+        else{cl.onclick=()=>doCell(zr,zc,r,c);if(G.selZone&&G.selZone[0]===zr&&G.selZone[1]===zc)cl.classList.add('ch');}
+      }
+      z.appendChild(cl);
+    }
+    if(G.phase==='zone'&&!done&&!isAI()){
+      z.style.cursor='pointer';
+      z.addEventListener('click',()=>doZone(zr,zc));
+    }
+    mb.appendChild(z);
+  }
+}
+
+function doZone(zr,zc){
+  if(G.phase!=='zone')return;
+  if(!G.board.isPlayable(zr,zc))return;
+  G.selZone=[zr,zc];G.phase='cell';render();tick();
+}
+
+function doCell(zr,zc,r,c){
+  if(G.phase!=='cell')return;
+  if(!G.selZone||G.selZone[0]!==zr||G.selZone[1]!==zc)return;
+  applyMove(zr,zc,r,c);
+}
+
+function applyMove(zr,zc,r,c){
+  G.board.mark(zr,zc,r,c,G.isX);G.board.eval();G.moves++;G.selZone=null;
+  const w=G.board.winner();
+  if(w){endGame(w);return;}
+  G.isX=!G.isX;G.phase='zone';render();tick();
+  if(isAI())schedAI();
+}
+
+function schedAI(){G.phase='ai';render();tick();setTimeout(runAI,380);}
+
+function runAI(){
+  const lv=(G.isX?G.players.x:G.players.o).level;
+  const zf=aiZone(G.board,G.isX,lv);
+  const[zr,zc]=[f2r(zf),f2c(zf)];
+  const cell=aiCell(G.board,zr,zc,G.isX,lv);
+  if(!cell){endGame('draw');return;}
+  applyMove(zr,zc,cell[0],cell[1]);
+}
+
+function endGame(w){
+  G.phase='end';hide('boardWrap');hide('topbar');show('endScreen');
+  const res=document.getElementById('endResult'),sub=document.getElementById('endSub');
+  if(w==='draw'){res.textContent='Draw';res.style.color='var(--muted)';sub.textContent='Neither player wins.';}
+  else{const p=w==='X'?G.players.x:G.players.o;res.textContent=p.name+' wins';res.style.color=w==='X'?'var(--accent)':'var(--accent2)';sub.textContent=G.moves+' moves played';}
+}
+
+function tick(){
+  const ind=document.getElementById('turnInd'),msg=document.getElementById('statusMsg');
+  const p=G.isX?G.players.x:G.players.o;
+  const cls='turn-indicator '+(G.isX?'turn-x':'turn-o');
+  if(G.phase==='ai'){ind.textContent=p.name+' thinking…';ind.className=cls;msg.textContent='';}
+  else if(G.phase==='zone'){ind.textContent=p.name+"'s turn";ind.className=cls;msg.textContent='pick a board';}
+  else if(G.phase==='cell'){ind.textContent=p.name+"'s turn";ind.className=cls;msg.textContent='pick a cell';}
+}
+</script>
+</body>
+</html>

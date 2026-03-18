@@ -54,97 +54,24 @@
     }
     .featured-heading .line { flex: 1; height: 1px; background: var(--border); }
 
-    .featured-grid {
+    /* ── Featured: single wide card layout ─────────────────────────── */
+    .featured-single {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 1.25rem;
-    }
-    @media (max-width: 620px) { .featured-grid { grid-template-columns: 1fr; } }
-
-    .featured-card {
-      display: flex; flex-direction: column;
       background: var(--surface, #111);
       border: 1px solid var(--border);
       border-radius: 10px;
       overflow: hidden;
-      text-decoration: none;
-      color: inherit;
-      transition: border-color 0.18s, transform 0.18s, box-shadow 0.18s;
-      position: relative;
     }
-    .featured-card:hover {
-      border-color: var(--accent, #7fff6a);
-      transform: translateY(-3px);
-      box-shadow: 0 8px 28px rgba(0,0,0,0.35);
-    }
-    .featured-card-static {
-      cursor: default;
-    }
-    .featured-card-static:hover {
-      transform: none;
-      box-shadow: none;
-      border-color: var(--border);
+    @media (max-width: 640px) {
+      .featured-single { grid-template-columns: 1fr; }
     }
 
-    .feat-screenshot {
-      width: 100%; aspect-ratio: 16/9;
-      object-fit: cover;
-      display: block;
-      background: var(--border);
+    .feat-media-col {
+      display: flex;
+      flex-direction: column;
     }
-    /* Placeholder shown when no image loads */
-    .feat-screenshot-placeholder {
-      width: 100%; aspect-ratio: 16/9;
-      background: repeating-linear-gradient(
-        135deg,
-        rgba(255,255,255,0.02) 0px,
-        rgba(255,255,255,0.02) 1px,
-        transparent 1px,
-        transparent 12px
-      ),
-      var(--surface, #111);
-      border-bottom: 1px solid var(--border);
-      display: flex; align-items: center; justify-content: center;
-      font-family: var(--mono); font-size: 0.7rem;
-      color: var(--border); letter-spacing: 0.06em;
-    }
-
-    .feat-body {
-      padding: 1rem 1.1rem 1.2rem;
-      display: flex; flex-direction: column; flex: 1;
-      gap: 0.45rem;
-    }
-    .feat-title {
-      font-size: 1.05rem; font-weight: 700;
-      color: var(--text); line-height: 1.25;
-      display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
-    }
-    .feat-badge {
-      font-size: 0.62rem; font-weight: 700;
-      letter-spacing: 0.08em; text-transform: uppercase;
-      padding: 2px 7px; border-radius: 4px;
-      background: rgba(127,255,106,0.12);
-      color: var(--accent, #7fff6a);
-      border: 1px solid rgba(127,255,106,0.25);
-    }
-    .feat-badge.capstone {
-      background: rgba(255,150,100,0.12);
-      color: #ff9664;
-      border-color: rgba(255,150,100,0.25);
-    }
-    .feat-desc {
-      font-size: 0.875rem; color: var(--muted); line-height: 1.55;
-    }
-    .feat-tags { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 2px; }
-    .feat-link {
-      margin-top: auto; padding-top: 0.65rem;
-      font-size: 0.8rem; font-weight: 600;
-      color: var(--accent, #7fff6a);
-      letter-spacing: 0.04em;
-    }
-    .featured-card-static .feat-link { display: none; }
-
-    /* Video embed inside featured card */
     .feat-video-wrap {
       position: relative; width: 100%; aspect-ratio: 16/9;
       background: #000;
@@ -152,6 +79,70 @@
     .feat-video-wrap iframe {
       position: absolute; top: 0; left: 0;
       width: 100%; height: 100%; border: 0;
+    }
+
+    .feat-meta-strip {
+      padding: 0.9rem 1rem;
+      border-top: 1px solid var(--border);
+      display: flex; gap: 6px; flex-wrap: wrap;
+      background: rgba(255,255,255,0.02);
+    }
+
+    .feat-notes-col {
+      padding: 1.5rem 1.4rem 1.5rem 0.2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.1rem;
+      overflow-y: auto;
+    }
+    @media (max-width: 640px) {
+      .feat-notes-col { padding: 1.2rem 1.1rem; }
+    }
+
+    .feat-notes-title {
+      font-size: 1.1rem; font-weight: 700;
+      color: var(--text); line-height: 1.2;
+      display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+    }
+    .feat-badge {
+      font-size: 0.62rem; font-weight: 700;
+      letter-spacing: 0.08em; text-transform: uppercase;
+      padding: 2px 7px; border-radius: 4px;
+      background: rgba(255,150,100,0.12);
+      color: #ff9664;
+      border: 1px solid rgba(255,150,100,0.25);
+    }
+
+    .feat-devnote {
+      font-size: 0.85rem;
+      line-height: 1.65;
+      color: var(--muted);
+    }
+
+    .feat-devnote-label {
+      font-size: 0.68rem; font-weight: 700;
+      letter-spacing: 0.1em; text-transform: uppercase;
+      color: var(--accent, #7fff6a);
+      margin-bottom: 0.35rem;
+    }
+
+    .feat-bullets {
+      margin: 0; padding: 0;
+      list-style: none;
+      display: flex; flex-direction: column; gap: 0.4rem;
+    }
+    .feat-bullets li {
+      font-size: 0.84rem;
+      color: var(--muted);
+      line-height: 1.5;
+      padding-left: 1.1rem;
+      position: relative;
+    }
+    .feat-bullets li::before {
+      content: '›';
+      position: absolute; left: 0;
+      color: var(--accent, #7fff6a);
+      font-weight: 700;
     }
 
     /* ── About section ─────────────────────────────────────────────── */
@@ -193,7 +184,7 @@
     .about-contact-label {
       font-size: 0.7rem; font-weight: 700;
       letter-spacing: 0.1em; text-transform: uppercase;
-      color: var(--border); margin-bottom: 0.2rem;
+      color: var(--dim); margin-bottom: 0.2rem;
     }
     .about-link {
       display: flex; align-items: center; gap: 8px;
@@ -233,8 +224,9 @@
   <div class="home-hero">
     <h1>Nikolas Hesla</h1>
     <p class="subtitle">
-      AAS Game Development &nbsp;·&nbsp;
-      BS Computer Science <span>(Game Dev minor)</span>
+      Full Stack Developer &nbsp;·&nbsp;
+      BS Computer Science &nbsp;·&nbsp;
+      UX &amp; Systems
     </p>
   </div>
 
@@ -247,29 +239,34 @@
     <div class="about-inner">
       <div class="about-text">
         <p>
-          I'm a game developer and programmer with an AAS in Game Development and a BS in Computer Science,
-          both with a focus on interactive systems and real-time programming. My work spans gameplay
-          mechanics, shader development, UI tools, and full game loops — from solo projects to leading
-          team capstone productions.
+          I'm a full stack developer with a BS in Computer Science and a background that spans
+          frontend interfaces, real-time systems, API integration, and interactive tooling. I care
+          about building software that feels intentional — clean architecture underneath, intuitive
+          experience on top, and the two genuinely working together.
         </p>
         <p>
-          I care about writing code that's clear, well-structured, and actually fun to build on. Outside
-          of games I enjoy working on tools, visualizers, and anything with interesting logic at its core.
-          Currently looking for software development opportunities where I can keep growing.
+          My projects tend to live at the intersection of interconnected systems and user-facing
+          design: a deck analysis tool that pulls and cross-references live card data from multiple
+          APIs, a WebGL renderer built around a single draw call, full gameplay loops that require
+          tight state management across many moving parts. I'm drawn to problems where the right
+          abstraction makes everything else easier.
+        </p>
+        <p>
+          I write code that's meant to be built on — readable, well-structured, and documented
+          where it counts. Currently looking for software development roles where I can contribute
+          across the stack and keep growing.
         </p>
       </div>
       <div class="about-contact">
         <div class="about-contact-label">Contact &amp; Links</div>
-        <a href="mailto:nhesla@gmail.com" class="about-link">
-          <!-- Email icon -->
+        <a href="/cdn-cgi/l/email-protection#6806000d1b0409280f05090104460b0705" class="about-link">
           <svg class="about-link-icon" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
             <rect x="1" y="3" width="14" height="10" rx="1.5" stroke="currentColor" stroke-width="1.4"/>
             <path d="M1.5 4L8 9.5L14.5 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
           </svg>
-          nhesla@gmail.com
+          <span class="__cf_email__" data-cfemail="c4aaaca1b7a8a584a3a9a5ada8eaa7aba9">[email&#160;protected]</span>
         </a>
         <a href="https://www.linkedin.com/in/nik-hesla-7b4b5b130/" target="_blank" rel="noopener" class="about-link">
-          <!-- LinkedIn icon -->
           <svg class="about-link-icon" viewBox="0 0 16 16" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
             <path d="M2.5 1A1.5 1.5 0 1 0 2.5 4 1.5 1.5 0 0 0 2.5 1zM1 5.5h3V15H1V5.5zM6 5.5h2.9v1.3h.04C9.36 5.9 10.5 5.3 11.8 5.3c3 0 3.2 1.97 3.2 4.53V15h-3v-4.5c0-1.07-.02-2.45-1.5-2.45-1.5 0-1.73 1.17-1.73 2.38V15H6V5.5z"/>
           </svg>
@@ -279,43 +276,17 @@
     </div>
   </div>
 
-  <!-- ── Featured Projects ──────────────────────────────────────────── -->
+  <!-- ── Featured Project ──────────────────────────────────────────── -->
   <div class="featured-section">
     <div class="featured-heading">
-      <h2>Featured Projects</h2>
+      <h2>Featured Project</h2>
       <div class="line"></div>
     </div>
-    <div class="featured-grid">
 
-      <!-- TCG Synergy Visualizer -->
-      <a href="react-app-deck-investigator/index.html" class="featured-card">
-        <img
-          class="feat-screenshot"
-          src="assets/screenshot_tcg_synergy.png"
-          alt="TCG Deck Synergy Visualizer screenshot"
-          onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"
-        />
-        <div class="feat-screenshot-placeholder" style="display:none">screenshot_tcg_synergy.png</div>
-        <div class="feat-body">
-          <div class="feat-title">
-            TCG Deck Synergy Visualizer
-            <span class="feat-badge">Featured</span>
-          </div>
-          <div class="feat-tags">
-            <span class="tag tag-blue">React</span>
-            <span class="tag tag-blue">TypeScript</span>
-            <span class="tag tag-blue">APIs</span>
-          </div>
-          <p class="feat-desc">
-            Import a deck list from MTG, YuGiOh, or Disney Lorcana and interactively visualize
-            card synergies. Pulls live card data and surfaces connections across a full deck.
-          </p>
-          <div class="feat-link">View project →</div>
-        </div>
-      </a>
+    <div class="featured-single">
 
-      <!-- Tasty Pastries capstone -->
-      <div class="featured-card featured-card-static">
+      <!-- Left col: video + tags -->
+      <div class="feat-media-col">
         <div class="feat-video-wrap">
           <iframe
             src="https://www.youtube.com/embed/uUYjZqz1piY"
@@ -324,23 +295,59 @@
             allowfullscreen>
           </iframe>
         </div>
-        <div class="feat-body">
-          <div class="feat-title">
-            Tasty Pastries
-            <span class="feat-badge capstone">Capstone · Lead</span>
-          </div>
-          <div class="feat-tags">
-            <span class="tag tag-red">Unreal Engine 4</span>
-            <span class="tag tag-red">C++</span>
-          </div>
-          <p class="feat-desc">
-            First-person baking game built in UE4 over eight weeks. I stepped up as lead programmer
-            mid-project after a team restructure, rebuilt the core gameplay loop from scratch,
-            and shipped on deadline. Ranked 4th in the class — and kids actually loved it.
-          </p>
+        <div class="feat-meta-strip">
+          <span class="tag tag-red">Unreal Engine 4</span>
+          <span class="tag tag-red">C++</span>
+          <span class="tag tag-neutral">8 Weeks</span>
+          <span class="tag tag-neutral">Team of 8</span>
         </div>
       </div>
 
+      <!-- Right col: dev notes -->
+      <div class="feat-notes-col">
+        <div class="feat-notes-title">
+          Tasty Pastries
+          <span class="feat-badge">Capstone · Lead Programmer</span>
+        </div>
+
+        <div>
+          <div class="feat-devnote-label">The Situation</div>
+          <p class="feat-devnote">
+            Eight-week capstone. Three programmers, five artists — and a lead who burned three
+            weeks trying to get VR working before leaving the project entirely. By week three,
+            nothing was built. I stepped into the lead role and started rebuilding from scratch.
+          </p>
+        </div>
+
+        <div>
+          <div class="feat-devnote-label">Technical Decisions</div>
+          <ul class="feat-bullets">
+            <li>Pivoted from VR to first-person to eliminate the player model/animation problem and keep scope tight</li>
+            <li>Built a generic "usable object" base class — pickups, interactions, and ingredient logic all inherited from a single system, so artists could swap in new meshes with minimal programmer involvement</li>
+            <li>Designed the recipe-matching system around ingredient state tracking in the mixing bowl, with flexible tolerance so imprecise amounts still registered correctly</li>
+            <li>Identified that pairing my other programmer with my own in-progress work created bottlenecks — restructured so he owned separate systems end-to-end (the recipe board, customer logic) rather than extending mine</li>
+          </ul>
+        </div>
+
+        <div>
+          <div class="feat-devnote-label">What I Owned</div>
+          <ul class="feat-bullets">
+            <li>Full core gameplay loop: object pickup, ingredient combination, recipe validation, level progression</li>
+            <li>Art pipeline QA — caught and standardized mesh scale, pivot, collision, and texture issues across all imported assets</li>
+            <li>Build debugging on presentation morning: tracked down and fixed a build-only bug with no runtime equivalent under a hard time deadline</li>
+          </ul>
+        </div>
+
+        <div>
+          <div class="feat-devnote-label">Outcome</div>
+          <p class="feat-devnote">
+            Shipped on deadline. Came back from three weeks behind in a ten-week course and
+            earned a B. The audience response — kids genuinely engaged with it — was the part
+            I didn't see coming and made the grind worth it.
+          </p>
+        </div>
+
+      </div>
     </div>
   </div>
 
@@ -504,25 +511,20 @@
           <span class="proj-card-arrow">Play →</span>
         </a>
 
-        <div class="proj-card" style="cursor:default">
+        <a href="ultimate_TicTacToe/index.html" class="proj-card">
           <div class="proj-card-top">
             <div>
-              <h3>Tasty Pastries <span style="font-weight:400;color:var(--muted);font-size:0.78rem">(Capstone)</span></h3>
+              <h3>Ultimate Tic-Tac-Toe</h3>
               <div class="tag-row" style="margin-bottom:0.4rem">
-                <span class="tag tag-red">Unreal Engine 4</span>
                 <span class="tag tag-red">C++</span>
-                <span class="tag tag-neutral">Capstone · Lead</span>
+                <span class="tag tag-green">Value-Based AI</span>
+                <span class="tag tag-neutral">School</span>
               </div>
             </div>
           </div>
-          <p>First-person baking game in UE4. I led this capstone project — trailer below.</p>
-          <div class="video-wrap">
-            <iframe src="https://www.youtube.com/embed/uUYjZqz1piY"
-              title="Tasty Pastries trailer"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowfullscreen></iframe>
-          </div>
-        </div>
+          <p>9×9 Ultimate Tic-Tac-Toe with a multi-level AI. Ported to JS so you can play it in the browser.</p>
+          <span class="proj-card-arrow">Play →</span>
+        </a>
 
       </div>
     </div>
