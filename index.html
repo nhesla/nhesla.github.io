@@ -272,7 +272,7 @@
           </svg>
           LinkedIn
         </a>
-        <a href="assets/Nikolas_Hesla_Resume.pdf" class="about-link" target="_blank">
+        <a href="assets/Nikolas_Hesla_Resume.pdf" download class="about-link">
           <svg class="about-link-icon" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M8 2v8M5 7l3 3 3-3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
             <rect x="2" y="11" width="12" height="3" rx="1" stroke="currentColor" stroke-width="1.3"/>
@@ -349,13 +349,13 @@
   <!-- ── Recent Interactive Projects ───────────────────────────────── -->
   <div class="projects-section">
     <div class="projects-section-heading">
-      <button class="section-toggle" aria-expanded="false" aria-controls="section-interactive">
+      <button class="section-toggle" aria-expanded="true" aria-controls="section-interactive">
         <h2>Recent Interactive Projects</h2>
         <div class="line"></div>
         <span class="section-caret">▲</span>
       </button>
     </div>
-    <div class="section-body" id="section-interactive">
+    <div class="section-body open" id="section-interactive">
       <div class="projects-grid">
 
         <a href="grass-webgl-shader/index.html" class="proj-card">
@@ -404,52 +404,16 @@
     </div>
   </div>
 
-  <!-- ── Coding Challenges ──────────────────────────────────────────── -->
-  <div class="projects-section">
-    <div class="projects-section-heading">
-      <button class="section-toggle" aria-expanded="false" aria-controls="section-challenges">
-        <h2>Coding Challenges</h2>
-        <div class="line"></div>
-        <span class="section-caret">▲</span>
-      </button>
-    </div>
-    <div class="section-body" id="section-challenges">
-      <div class="challenges-strip" style="padding-top:0; border-top:none;">
-        <div class="strip-heading" style="margin-top:0;">
-          <a href="coding_challenges/index.html" class="strip-link">View all →</a>
-        </div>
-        <div class="chal-grid">
-          <a href="coding_challenges/index.html#angle-brackets" class="chal-card">
-            <span class="diff-badge diff-hard">Hard</span>
-            <div>
-              <div class="chal-name">generateAngleBracketSequences</div>
-              <div class="chal-desc">Bitset enumeration with a 4× search space optimization.</div>
-              <div class="chal-lang">C++ · HackerRank</div>
-            </div>
-          </a>
-          <a href="coding_challenges/index.html#maximize-meetings" class="chal-card">
-            <span class="diff-badge diff-medium">Medium</span>
-            <div>
-              <div class="chal-name">maximizeNonOverlappingMeetings</div>
-              <div class="chal-desc">Greedy interval scheduling — always prefer the earliest finish.</div>
-              <div class="chal-lang">C++ · HackerRank</div>
-            </div>
-          </a>
-        </div>
-      </div>
-    </div>
-  </div>
-
   <!-- ── Game Projects ───────────────────────────────────────── -->
   <div class="projects-section">
     <div class="projects-section-heading">
-      <button class="section-toggle" aria-expanded="false" aria-controls="section-games">
+      <button class="section-toggle" aria-expanded="true" aria-controls="section-games">
         <h2>Game Projects</h2>
         <div class="line"></div>
         <span class="section-caret">▲</span>
       </button>
     </div>
-    <div class="section-body" id="section-games">
+    <div class="section-body open" id="section-games">
       <div class="projects-grid">
 
         <a href="phaser-tank-game/index.html" class="proj-card">
@@ -529,6 +493,42 @@
           <span class="proj-card-arrow">Play →</span>
         </a>
 
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Coding Challenges ──────────────────────────────────────────── -->
+  <div class="projects-section">
+    <div class="projects-section-heading">
+      <button class="section-toggle" aria-expanded="true" aria-controls="section-challenges">
+        <h2>Coding Challenges</h2>
+        <div class="line"></div>
+        <span class="section-caret">▲</span>
+      </button>
+    </div>
+    <div class="section-body open" id="section-challenges">
+      <div class="challenges-strip" style="padding-top:0; border-top:none;">
+        <div class="strip-heading" style="margin-top:0;">
+          <a href="coding_challenges/index.html" class="strip-link">View all →</a>
+        </div>
+        <div class="chal-grid">
+          <a href="coding_challenges/index.html#angle-brackets" class="chal-card">
+            <span class="diff-badge diff-hard">Hard</span>
+            <div>
+              <div class="chal-name">generateAngleBracketSequences</div>
+              <div class="chal-desc">Bitset enumeration with a 4× search space optimization.</div>
+              <div class="chal-lang">C++ · HackerRank</div>
+            </div>
+          </a>
+          <a href="coding_challenges/index.html#maximize-meetings" class="chal-card">
+            <span class="diff-badge diff-medium">Medium</span>
+            <div>
+              <div class="chal-name">maximizeNonOverlappingMeetings</div>
+              <div class="chal-desc">Greedy interval scheduling — always prefer the earliest finish.</div>
+              <div class="chal-lang">C++ · HackerRank</div>
+            </div>
+          </a>
+        </div>
       </div>
     </div>
   </div>
